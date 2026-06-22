@@ -211,7 +211,7 @@
     <div class="w-full max-w-4xl bg-[#02131c] border border-slate-700 rounded-[2rem] p-8 max-h-[90vh] overflow-y-auto">
         <h2 class="text-xl font-bold text-white mb-6">Nuevo Registro de Scrap</h2>
         <form method="POST" action="{{ url_for('main.scrap_section', section='nuevo') }}" class="space-y-6">
-            {% if current_user.rol in ['ADMIN', 'Calidad'] %}
+            {% if current_user.rol.id in [1, 2] %}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700 mb-6">
                 <div>
                     <label class="block text-[10px] text-slate-400 font-bold uppercase">Fecha Registro</label>
@@ -423,6 +423,19 @@ function clearDetail() {
     document.getElementById('emptyState').classList.remove('hidden');
     document.getElementById('detailBody').classList.add('hidden');
     document.getElementById('detailBody').classList.remove('flex');
+}
+
+// Añadir al final de tu script
+const eHoraInput = document.getElementById('e_hora'); // Asegúrate de añadir este input en el formulario de edición
+if (eHoraInput) {
+    eHoraInput.addEventListener('change', function () {
+        fetch(`/scrap/get-turno?hora=${this.value}`)
+            .then(r => r.json())
+            .then(d => { 
+                // Asumiendo que añades un input con id="e_turno" en el editarModal
+                document.getElementById('e_turno').value = d.nombre || 'Fuera de rango'; 
+            });
+    });
 }
 
 // ---- MODAL EDITAR ----

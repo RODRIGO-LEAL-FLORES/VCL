@@ -14,6 +14,9 @@ from flask_login import login_required, login_user, current_user
 from datetime import datetime
 
 
+from flask import jsonify
+
+
 
 # =========================================================================
 # VISTA PRINCIPAL: MENÚ DE OPCIONES DE SCRAP
@@ -21,14 +24,16 @@ from datetime import datetime
 @main_bp.route('/scrap')
 @login_required
 def scrap():
+    print(f"Usuario actual: {current_user.rol.id}")
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
+    
+    
         
     return render_template('scrap/scrap.html')
 
 
-# ... dentro de la ruta scrap_section, en el bloque if request.method == 'POST': ...
 
 
 
@@ -134,6 +139,7 @@ def scrap_section(section):
 
 @main_bp.route('/scrap/action/<section>/<action_type>', methods=['POST'])
 @main_bp.route('/scrap/action/<section>/<action_type>/<int:item_id>', methods=['POST'])
+@login_required
 def scrap_actions(section, action_type, item_id=None):
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización para acceder a este módulo.")
@@ -233,6 +239,7 @@ def scrap_actions(section, action_type, item_id=None):
     return redirect(url_for('main.scrap_section', section=section))
 
 @main_bp.route('/historial_usuario/<int:user_id>')
+@login_required
 def historial_usuario(user_id):
     # Aquí buscas los registros hechos por ese usuario y renderizas el historial
     registros = Scrap.query.filter_by(usuario_registro_id=user_id).all()
@@ -290,8 +297,6 @@ def scrap_eliminar(item_id):
     return redirect(url_for('main.scrap_section', section='nuevo'))
 
 
-
-from flask import jsonify
 
 @main_bp.route('/scrap/get-turno', methods=['GET'])
 @login_required
