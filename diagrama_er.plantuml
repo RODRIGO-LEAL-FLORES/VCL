@@ -1,0 +1,131 @@
+@startuml VCL_Database_ER
+
+!theme plain
+skinparam linetype ortho
+
+entity "Roles" as ROLES {
+    *id : INT [PK]
+    --
+    nombre : VARCHAR(50) [UQ]
+}
+
+entity "Usuarios" as USUARIOS {
+    *id : INT [PK]
+    --
+    nombre : VARCHAR(100)
+    email : VARCHAR(100) [UQ]
+    password : VARCHAR(255)
+    rol_id : INT [FK]
+    fecha_creacion : TIMESTAMP
+    activo : BOOLEAN
+}
+
+entity "Area" as AREA {
+    *id_area : INT [PK]
+    --
+    area : VARCHAR(100) [UQ]
+}
+
+entity "Categorias" as CATEGORIAS {
+    *id_categorias : INT [PK]
+    --
+    categoria : VARCHAR(100) [UQ]
+}
+
+entity "Defectos" as DEFECTOS {
+    *id_defecto : INT [PK]
+    --
+    defecto : VARCHAR(100) [UQ]
+}
+
+entity "Ocurrencias" as OCURRENCIAS {
+    *id_ocurrencia : INT [PK]
+    --
+    ocurrencia : VARCHAR(100) [UQ]
+}
+
+entity "Tipo_de_Reclamacion" as TIPO_RECLAMACION {
+    *id_tipo_de_reclamacion : INT [PK]
+    --
+    tipo_reclamacion : VARCHAR(100) [UQ]
+}
+
+entity "Estatus_Reclamaciones" as ESTATUS_RECLAMACIONES {
+    *id_estatus : INT [PK]
+    --
+    descripcion_status : VARCHAR(100) [UQ]
+}
+
+entity "Clientes" as CLIENTES {
+    *id_cliente : INT [PK]
+    --
+    nombre : VARCHAR(200)
+}
+
+entity "Contenedores" as CONTENEDORES {
+    *id_numero_contenedor : INT [PK]
+    --
+    numero_contenedor : VARCHAR(50) [UQ]
+}
+
+entity "Reclamaciones" as RECLAMACIONES {
+    *id : INT [PK]
+    --
+    id_reporte_cliente : VARCHAR(50) [UQ]
+    issue : VARCHAR(255)
+    id_defecto : INT [FK]
+    id_categoria : INT [FK]
+    id_ocurrencia : INT [FK]
+    id_numero_contenedor : INT [FK]
+    numero_parte : VARCHAR(100)
+    id_cliente : INT [FK]
+    lote : VARCHAR(100)
+    cantidad_piezas : INT
+    cantidad_kg : DECIMAL(10,2)
+    fecha_reporte : DATE
+    fecha_compromiso : DATE
+    periodo : VARCHAR(50)
+    id_estatus : INT [FK]
+}
+
+entity "Color_Ticket" as COLOR_TICKET {
+    *id_color : INT [PK]
+    --
+    color_ticket : VARCHAR(50) [UQ]
+    descripcion_color_ticket : VARCHAR(255)
+}
+
+entity "Estatus_Ticket" as ESTATUS_TICKET {
+    *id_estatus_ticket : INT [PK]
+    --
+    status_descripcion : VARCHAR(100) [UQ]
+}
+
+entity "Ticket" as TICKET {
+    *id_folio_ticket : INT [PK]
+    --
+    id_color_ticket : INT [FK]
+    emisor : VARCHAR(100)
+    id_area_responsable : INT [FK]
+    fecha_emicion : DATE
+    fecha_compromiso : DATE
+    fecha_cierre : DATE
+    id_estatus_ticket : INT [FK]
+    dias_retrazo : INT
+}
+
+' Relaciones RECLAMACIONES
+USUARIOS ||--o{ ROLES : "tiene"
+RECLAMACIONES }o--|| DEFECTOS : "tiene"
+RECLAMACIONES }o--|| CATEGORIAS : "pertenece"
+RECLAMACIONES }o--|| OCURRENCIAS : "registra"
+RECLAMACIONES }o--|| CONTENEDORES : "menciona"
+RECLAMACIONES }o--|| CLIENTES : "reporte de"
+RECLAMACIONES }o--|| ESTATUS_RECLAMACIONES : "tiene estado"
+
+' Relaciones TICKETS
+TICKET }o--|| COLOR_TICKET : "tiene color"
+TICKET }o--|| AREA : "responsable"
+TICKET }o--|| ESTATUS_TICKET : "tiene estado"
+
+@enduml

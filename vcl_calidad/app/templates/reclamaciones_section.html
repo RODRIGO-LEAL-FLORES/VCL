@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section_title }} - Reclamaciones{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-7xl relative min-h-[calc(100vh-12rem)]">
+    <div class="border-b border-slate-800/60 pb-6 mb-10">
+        <h1 class="text-3xl font-black tracking-wide text-white uppercase">{{ section_title }}</h1>
+        <p class="text-slate-400 font-medium text-sm mt-1">
+            Aquí puedes ver la sección para gestionar <span class="text-white font-semibold">{{ section_title }}</span>.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-[#020f14]/90 border border-slate-800/80 rounded-3xl p-6 shadow-xl shadow-slate-950/20">
+            <h2 class="text-xl font-bold text-white mb-4">Opciones rápidas</h2>
+            <ul class="space-y-3 text-slate-400 text-sm">
+                <li class="flex items-start gap-3"><span class="text-emerald-400">•</span> Alta de nuevo registro</li>
+                <li class="flex items-start gap-3"><span class="text-emerald-400">•</span> Listado y edición</li>
+                <li class="flex items-start gap-3"><span class="text-emerald-400">•</span> Eliminación y control</li>
+            </ul>
+        </div>
+
+        <div class="lg:col-span-2 bg-[#020f14]/90 border border-slate-800/80 rounded-3xl p-6 shadow-xl shadow-slate-950/20">
+            <div class="flex flex-wrap gap-4 items-center justify-between mb-6">
+                <p class="text-slate-400 text-sm">En construcción: aquí irá el CRUD de {{ section_title }}.</p>
+                <a href="{{ url_for('main.reclamaciones') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 hover:text-emerald-400">← Volver a Reclamaciones</a>
+            </div>
+            <div class="rounded-3xl border border-slate-800/70 bg-slate-950/20 p-6">
+                <p class="text-slate-400">Por ahora esta vista es un marcador de posición. Cuando esté listo, podrás crear nuevas entradas y ver la lista existente desde aquí.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
