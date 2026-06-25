@@ -18,6 +18,7 @@ class Scrap(db.Model):
     id_tipo_acero = db.Column(db.Integer, db.ForeignKey('tipos_acero.id_tipo_acero'), nullable=False)
     id_estatus_scrap = db.Column(db.Integer, db.ForeignKey('estatus_scrap.id_estatus_scrap'), nullable=False)
     usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    id_tipo_laminacion = db.Column(db.Integer, db.ForeignKey('tipos_laminacion.id_tipo_laminacion'), nullable=False)
 
     # Campos manuales
     numero_parte = db.Column(db.String(50), nullable=False)
@@ -34,6 +35,7 @@ class Scrap(db.Model):
     clasificacion = db.relationship('ClasificacionScrap', backref='registros_scrap')
     supervisor = db.relationship('Supervisor', backref='registros_scrap')
     tipo_acero = db.relationship('TipoAcero', backref='registros_scrap')
+    tipo_laminacion = db.relationship('TipoLaminacion', backref='registros_scrap')
     estatus = db.relationship('EstatusScrap', backref='registros_scrap')
    
     cliente = db.relationship('Cliente', backref='registros_scrap')

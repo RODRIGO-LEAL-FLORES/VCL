@@ -66,6 +66,15 @@ class TipoAcero(db.Model):
         return f'<TipoAcero {self.especificacion}>'
 
 
+class TipoLaminacion(db.Model):
+    __tablename__ = 'tipos_laminacion'
+    id_tipo_laminacion = db.Column(db.Integer, primary_key=True)
+    especificacion = db.Column(db.String(50), nullable=False, unique=True)
+
+    def __repr__(self):
+        return f'<TipoLaminacion {self.especificacion}>'
+
+
 class EstatusScrap(db.Model):
     __tablename__ = 'estatus_scrap'
     id_estatus_scrap = db.Column(db.Integer, primary_key=True)

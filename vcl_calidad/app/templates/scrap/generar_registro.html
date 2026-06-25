@@ -81,7 +81,8 @@
                             data-id-clasificacion="{{ reg.id_clasificacion or '' }}"
                             data-id-cliente="{{ reg.id_cliente or '' }}"
                             data-id-estatus="{{ reg.id_estatus_scrap or '' }}"
-                            data-id-acero="{{ reg.id_tipo_acero or '' }}">
+                            data-id-acero="{{ reg.id_tipo_acero or '' }}"
+                            data-id-laminacion="{{ reg.id_tipo_laminacion or '' }}">
 
                             <td class="p-4 pl-8 font-mono text-sm">{{ reg.lote }}</td>
                             <td class="p-4">{{ reg.cliente.nombre if reg.cliente else 'N/A' }}</td>
@@ -170,6 +171,10 @@
                             <span class="text-[10px] uppercase tracking-widest text-slate-500">Estatus</span>
                             <span id="dEstatus" class="text-sm font-bold text-white"></span>
                         </div>
+                         <div class="flex justify-between items-baseline">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500">tipo laminación</span>
+                            <span id="dTipoLaminacion" class="text-sm font-bold text-white"></span>
+                        </div>
                     </div>
                     <div class="grid grid-cols-3 gap-2 border-t border-slate-800/60 pt-4 mt-4">
                         <div class="bg-slate-900/60 rounded-xl p-3 text-center">
@@ -236,7 +241,9 @@
                     ('Clasificación','id_clasificacion',clasificaciones,'clasificacion'),
                     ('Cliente','id_cliente',clientes,'nombre'),
                     ('Estatus','id_estatus_scrap',estatus_list,'descripcion_status'),
-                    ('Tipo Acero','id_tipo_acero',tipos_acero,'especificacion')
+                    ('Tipo Acero','id_tipo_acero',tipos_acero,'especificacion'),
+                    ('Tipo Laminación','id_tipo_laminacion',tipos_laminacion,'especificacion')
+                    
                 ] %}
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">{{ label }}</label>
@@ -341,6 +348,16 @@
                         {% endfor %}
                     </select>
                 </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tipo Laminación</label>
+                    <select name="id_tipo_laminacion" id="e_laminacion" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3">
+                        <option value="">Seleccionar...</option>
+                        {% for item in tipos_laminacion %}
+                            <option value="{{ item.id_tipo_laminacion }}">{{ item.especificacion }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-800 pt-6">
                 <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">LOTE</label><input type="text" name="lote" id="e_lote" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
@@ -404,6 +421,8 @@ function selectRow(i) {
     document.getElementById('dPeso').textContent      = parseFloat(row.dataset.peso).toFixed(1);
     document.getElementById('dRetrabajo').textContent = row.dataset.retrabajo;
     document.getElementById('dNg').textContent        = row.dataset.ng;
+    document.getElementById('dTipoLaminacion').textContent = row.dataset.tipoLaminacion;
+     document.getElementById('dTipoAcero').textContent = row.dataset.tipoAcero;
 
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('detailBody').classList.remove('hidden');
@@ -456,7 +475,8 @@ function abrirEditar(i) {
     setSelect('e_clasificacion',row.dataset.idClasificacion);
     setSelect('e_cliente',      row.dataset.idCliente);
     setSelect('e_estatus',      row.dataset.idEstatus);
-    setSelect('e_acero',        row.dataset.idAcero);
+    setSelect('e_laminacion',   row.dataset.idTipoLaminacion);
+     setSelect('e_acero',   row.dataset.idTipoacero);
 
     // Pre-llenar inputs
     document.getElementById('e_lote').value      = row.dataset.lote;

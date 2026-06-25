@@ -209,6 +209,11 @@ CREATE TABLE Tipos_Acero (
     especificacion VARCHAR(50) NOT NULL UNIQUE
 );
 
+CREATE TABLE Tipos_Laminacion (
+    id_tipo_laminacion SERIAL PRIMARY KEY,
+    especificacion VARCHAR(50) NOT NULL UNIQUE
+);
+
 CREATE TABLE Estatus_Scrap (
     id_estatus_scrap SERIAL PRIMARY KEY,
     descripcion_status VARCHAR(50) NOT NULL UNIQUE
@@ -230,6 +235,7 @@ CREATE TABLE Scrap (
     id_supervisor INT NOT NULL,
     id_cliente INT NOT NULL,      -- Relación directa a tu tabla de Clientes existente
     id_tipo_acero INT NOT NULL,
+    id_tipo_laminacion INT NOT NULL,
     id_estatus_scrap INT NOT NULL,
     
     numero_parte VARCHAR(50) NOT NULL,
@@ -248,6 +254,7 @@ CREATE TABLE Scrap (
     FOREIGN KEY (id_supervisor) REFERENCES Supervisores(id_supervisor),
     FOREIGN KEY (id_cliente) REFERENCES Clientes(id_cliente),
     FOREIGN KEY (id_tipo_acero) REFERENCES Tipos_Acero(id_tipo_acero),
+    FOREIGN KEY (id_tipo_laminacion) REFERENCES Tipos_Laminacion(id_tipo_laminacion),
     FOREIGN KEY (id_estatus_scrap) REFERENCES Estatus_Scrap(id_estatus_scrap),
     FOREIGN KEY (usuario_registro_id) REFERENCES Usuarios(id)
 );

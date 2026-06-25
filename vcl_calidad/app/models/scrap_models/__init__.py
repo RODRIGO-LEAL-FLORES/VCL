@@ -6,6 +6,8 @@ from .catalogos import (
     ClasificacionScrap, 
     Supervisor, 
     TipoAcero, 
-    EstatusScrap
+    EstatusScrap,
+    TipoLaminacion
+    
 )
 from .scrap import Scrap

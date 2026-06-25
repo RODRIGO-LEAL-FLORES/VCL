@@ -1,3 +1,5 @@
+from flask_login import current_user, login_required
+
 from . import main_bp
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
@@ -9,16 +11,20 @@ from app.models.cliente import Cliente
 
 
 @main_bp.route('/reclamaciones')
+@login_required
 def reclamaciones():
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
     return render_template('reclamaciones.html')
 
 
 @main_bp.route('/reclamaciones/<section>')
+@login_required
 def reclamaciones_section(section):
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     allowed = {
         'nuevo': 'Nueva Reclamación',
@@ -192,9 +198,12 @@ def reclamaciones_section(section):
 
 
 @main_bp.route('/reclamaciones/clientes/crear', methods=['POST'])
+@login_required
 def crear_cliente():
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
+    
 
     nombre = request.form.get('nombre', '').strip()
     if not nombre:
@@ -209,9 +218,11 @@ def crear_cliente():
 
 
 @main_bp.route('/reclamaciones/clientes/editar/<int:id_cliente>', methods=['GET', 'POST'])
+@login_required
 def editar_cliente(id_cliente):
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     cliente = Cliente.query.get_or_404(id_cliente)
 
@@ -249,9 +260,11 @@ def editar_cliente(id_cliente):
 
 
 @main_bp.route('/reclamaciones/clientes/eliminar/<int:id_cliente>', methods=['POST'])
+@login_required
 def eliminar_cliente(id_cliente):
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     cliente = Cliente.query.get_or_404(id_cliente)
     db.session.delete(cliente)
@@ -264,9 +277,11 @@ def eliminar_cliente(id_cliente):
 # ==========================================
 
 @main_bp.route('/reclamaciones/defectos/crear', methods=['POST'])
+@login_required
 def crear_defecto():
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     descripcion = request.form.get('descripcion', '').strip()
     if not descripcion:
@@ -281,9 +296,11 @@ def crear_defecto():
 
 
 @main_bp.route('/reclamaciones/defectos/editar/<int:id_defecto>', methods=['GET', 'POST'])
+@login_required
 def editar_defecto(id_defecto):
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     defecto = Defecto.query.get_or_404(id_defecto)
 
@@ -338,9 +355,11 @@ def editar_defecto(id_defecto):
 
 
 @main_bp.route('/reclamaciones/defectos/eliminar/<int:id_defecto>', methods=['POST'])
+@login_required
 def eliminar_defecto(id_defecto):
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     defecto = Defecto.query.get_or_404(id_defecto)
     db.session.delete(defecto)
@@ -355,9 +374,11 @@ def eliminar_defecto(id_defecto):
 # ==========================================
 
 @main_bp.route('/reclamaciones/tipos/crear', methods=['POST'])
+@login_required
 def crear_tipo():
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     nombre = request.form.get('nombre', '').strip()
     if not nombre:
@@ -370,9 +391,11 @@ def crear_tipo():
     return redirect(url_for('main.reclamaciones_section', section='tipos'))
 
 @main_bp.route('/reclamaciones/tipos/editar/<int:id_tipo>', methods=['GET', 'POST'])
+@login_required
 def editar_tipo(id_tipo):
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     tipo_editar = Tipo.query.get_or_404(id_tipo)
 
@@ -394,9 +417,11 @@ def editar_tipo(id_tipo):
     )
     
 @main_bp.route('/reclamaciones/tipos/eliminar/<int:id_tipo>', methods=['POST'])
+@login_required
 def eliminar_tipo(id_tipo):
-    if 'user_id' not in session:
-        return redirect(url_for('main.welcome'))
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
     tipo_eliminar = Tipo.query.get_or_404(id_tipo)
     db.session.delete(tipo_eliminar)
