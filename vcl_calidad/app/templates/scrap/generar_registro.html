@@ -35,7 +35,7 @@
                 <p class="text-2xl font-black text-amber-400">{{ registros | sum(attribute='peso') | round(1) if registros else '—' }}</p>
             </div>
             <div class="px-8 py-5">
-                <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Piezas NG</p>
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Peso NG</p>
                 <p class="text-2xl font-black text-red-400">{{ registros | sum(attribute='cantidad_ng') if registros else '—' }}</p>
             </div>
         </div>
@@ -171,10 +171,17 @@
                             <span class="text-[10px] uppercase tracking-widest text-slate-500">Estatus</span>
                             <span id="dEstatus" class="text-sm font-bold text-white"></span>
                         </div>
-                         <div class="flex justify-between items-baseline">
+                        <div class="flex justify-between items-baseline">
                             <span class="text-[10px] uppercase tracking-widest text-slate-500">tipo laminación</span>
                             <span id="dTipoLaminacion" class="text-sm font-bold text-white"></span>
                         </div>
+
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500">tipo acero</span>
+                            <span id="dTipoAcero" class="text-sm font-bold text-white"></span>
+                        </div>
+
+
                     </div>
                     <div class="grid grid-cols-3 gap-2 border-t border-slate-800/60 pt-4 mt-4">
                         <div class="bg-slate-900/60 rounded-xl p-3 text-center">

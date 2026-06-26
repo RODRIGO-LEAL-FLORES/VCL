@@ -842,7 +842,7 @@ def scrap_reporte_pdf():
 
     # KPIs
     kpi_data = [
-        ['REGISTROS', 'PESO TOTAL (kg)', 'PIEZAS NG', 'RETRABAJO', 'PESO PROM / REG'],
+        ['REGISTROS', 'PESO TOTAL (kg)', 'PESO NG', 'RETRABAJO', 'PESO PROM / REG'],
         [str(total_regs), f'{total_peso:,.1f}', str(total_ng), str(total_retrabajo),
          f'{peso_prom:,.1f}' if total_regs else '—'],
     ]
@@ -888,7 +888,7 @@ def scrap_reporte_pdf():
     # PÁGINA 3: ESTATUS + MÁQUINAS
     # ════════════════════════════════════════════════════════════════════════
     story.append(PageBreak())
-    story += _section('Análisis por Estatus (Piezas NG)', s_sec)
+    story += _section('Análisis por Estatus (Peso NG)', s_sec)
     story.append(_side_by_side(
         make_pie(data_estatus_ng,   'NG por Estatus (pastel)',   w_mm=(W_MM-4)/2, h_mm=H),
         make_bar_v(data_estatus_ng, 'NG por Estatus (barras)',   color='#dc2626', w_mm=(W_MM-4)/2, h_mm=H),
@@ -906,7 +906,7 @@ def scrap_reporte_pdf():
     # PÁGINA 4: OPERADORES + SUPERVISORES
     # ════════════════════════════════════════════════════════════════════════
     story.append(PageBreak())
-    story += _section('Análisis por Operador (Piezas NG)', s_sec)
+    story += _section('Análisis por Operador (Peso NG)', s_sec)
     story.append(_side_by_side(
         make_pie(data_operador_ng[:8],   'NG por Operador (pastel)', w_mm=(W_MM-4)/2, h_mm=H),
         make_bar_h(data_operador_ng[:8], 'NG por Operador (barras)', color='#dc2626', w_mm=(W_MM-4)/2, h_mm=H, unit='NG'),
