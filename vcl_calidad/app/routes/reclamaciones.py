@@ -13,10 +13,11 @@ from app.models.cliente import Cliente
 @main_bp.route('/reclamaciones')
 @login_required
 def reclamaciones():
+    print(f"Usuario actual: {current_user.rol.id}")
     if not current_user.puede_ver_reclamaciones:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
-    return render_template('reclamaciones.html')
+
 
 
 @main_bp.route('/reclamaciones/<section>')
@@ -200,6 +201,7 @@ def reclamaciones_section(section):
 @main_bp.route('/reclamaciones/clientes/crear', methods=['POST'])
 @login_required
 def crear_cliente():
+    
     if not current_user.puede_ver_reclamaciones:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))

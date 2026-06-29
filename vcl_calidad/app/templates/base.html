@@ -12,7 +12,6 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
     <style>
-        /* Estilos para que Flatpickr combine con tu diseño oscuro */
         .flatpickr-calendar { background: #02131c !important; border: 1px solid #334155 !important; color: #cbd5e1 !important; }
         .flatpickr-time input { color: #ffffff !important; }
         .flatpickr-time .flatpickr-am-pm { color: #cbd5e1 !important; }
@@ -63,16 +62,11 @@
             </a>
 
             {% if current_user.is_authenticated %}
-
-            <a href="{{ url_for('main.home') }}" class="text-xl font-bold tracking-wide text-red-500 hover:text-red-400 transition-colors flex items-center justify-between group py-2 mt-10 border-t border-slate-800/50 pt-6">
+            <a href="{{ url_for('main.home') }}" class="text-xl font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center justify-between group py-2">
                 <span>Home</span>
-
-                
+            </a>
             <a href="{{ url_for('main.logout') }}" class="text-xl font-bold tracking-wide text-red-500 hover:text-red-400 transition-colors flex items-center justify-between group py-2 mt-10 border-t border-slate-800/50 pt-6">
                 <span>Cerrar Sesión</span>
-            </a>
-
-             
             </a>
             {% endif %}
         </div>
@@ -97,6 +91,7 @@
         </div>
     </footer>
 
+    <!-- ── Menú hamburguesa ─────────────────────────────────────────── -->
     <script>
         const menuBtn = document.getElementById('menu-btn');
         const sideMenu = document.getElementById('side-menu');
@@ -123,6 +118,75 @@
         menuBtn.addEventListener('click', toggleMenu);
         menuBackdrop.addEventListener('click', toggleMenu);
     </script>
+
+    <!-- ── Cierre de sesión por inactividad (solo usuarios logueados) ── -->
+    {% if current_user.is_authenticated %}
+    <script>
+        const INACTIVITY_LIMIT_MS = 10 * 60 * 1000; // 30 minutos
+        const WARNING_BEFORE_MS   = 60 * 1000;       // Avisar 1 min antes
+        const LOGOUT_URL          = "{{ url_for('main.logout') }}";
+
+        let warningTimer, logoutTimer;
+        let warningModal = null;
+
+        function resetTimers() {
+            clearTimeout(warningTimer);
+            clearTimeout(logoutTimer);
+            warningTimer = setTimeout(showWarning, INACTIVITY_LIMIT_MS - WARNING_BEFORE_MS);
+            logoutTimer  = setTimeout(forceLogout,  INACTIVITY_LIMIT_MS);
+        }
+
+        function showWarning() {
+            if (warningModal) return;
+
+            warningModal = document.createElement('div');
+            warningModal.innerHTML = `
+                <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm">
+                    <div style="background:#02131c; border:1px solid #334155;" class="rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center">
+                        <div class="text-4xl mb-4"></div>
+                        <h2 class="text-white font-black text-xl mb-2">¿Sigues ahí?</h2>
+                        <p class="text-slate-400 text-sm mb-6">
+                            Tu sesión cerrará en 
+                            <span id="countdown" style="color:#34d399; font-weight:bold;">60</span>s 
+                            por inactividad.
+                        </p>
+                        <button onclick="keepAlive()"
+                            style="background:#1b6339;"
+                            class="w-full py-3 hover:opacity-90 text-white font-bold rounded-xl transition-opacity">
+                            Continuar sesión
+                        </button>
+                    </div>
+                </div>`;
+            document.body.appendChild(warningModal);
+
+            let secs = Math.floor(WARNING_BEFORE_MS / 1000);
+            const countEl = document.getElementById('countdown');
+            const interval = setInterval(() => {
+                secs--;
+                if (countEl) countEl.textContent = secs;
+                if (secs <= 0) clearInterval(interval);
+            }, 1000);
+        }
+
+        function keepAlive() {
+            if (warningModal) { warningModal.remove(); warningModal = null; }
+            resetTimers();
+        }
+
+        function forceLogout() {
+            window.location.href = LOGOUT_URL;
+        }
+
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click']
+            .forEach(evt => document.addEventListener(evt, () => {
+                if (warningModal) return;
+                resetTimers();
+            }));
+
+        resetTimers();
+    </script>
+    {% endif %}
+
     {% block modals %}{% endblock %}
 </body>
 </html>

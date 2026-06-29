@@ -9,6 +9,13 @@ from flask_login import login_required, login_user, current_user  # Importa func
 
 main_bp = Blueprint('main', __name__)
 
+
+
+# ── Sesión permanente en todas las rutas ──────────────────────────────
+@main_bp.before_request
+def make_session_permanent():
+    session.permanent = True
+
 # ==========================================
 # 1. TU INDEX PÚBLICO (LA RAÍZ)
 # ==========================================
@@ -23,7 +30,6 @@ def index():
 # ==========================================
 
 
-from flask_login import login_user, current_user
 
 @main_bp.route('/welcome', methods=['GET', 'POST'])
 def welcome():
@@ -58,9 +64,10 @@ def welcome():
 # 3. TU HOME PRIVADO (PANEL DE CONTROL)
 # ==========================================
 @main_bp.route('/home')
+
 @login_required
 def home():
-    
+    session.permanent = True 
         
     # Si está logeado, ve sus tarjetas dinámicas en el home.html
     return render_template('home.html')
@@ -72,7 +79,6 @@ def home():
 @main_bp.route('/reclamaciones')
 @login_required
 def reclamaciones():
-    
     return render_template('reclamaciones.html')
 
 
