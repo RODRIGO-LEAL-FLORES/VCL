@@ -4,5 +4,6 @@ psycopg2-binary
 gunicorn
 python-dotenv
 flask-login
+flask-limiter
 reportlab
 matplotlib

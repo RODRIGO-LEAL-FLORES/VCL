@@ -69,8 +69,6 @@ def scrap():
 
 
 
-
-
 # =========================================================================
 # CONTROLADOR DINÁMICO POR SECCIONES (VISTAS GET)
 # =========================================================================
@@ -208,6 +206,12 @@ def scrap_actions(section, action_type, item_id=None):
 
     if section in model_mapping:
         model, field_name, pk_name = model_mapping[section]
+        
+        # ===== PROTECCIÓN: ESTATUS NO SE PUEDE CREAR NI EDITAR =====
+        if section == 'estatus':
+            if action_type in ['crear', 'editar', 'eliminar']:
+                flash('Los estatus están predefinidos y no pueden ser modificados.')
+                return redirect(url_for('main.scrap_section', section=section))
         
         # OPERACIÓN: CREAR O EDITAR
         if action_type in ['crear', 'editar']:

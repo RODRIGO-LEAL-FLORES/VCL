@@ -9,8 +9,8 @@
             <div class="px-6 py-6 border-b border-slate-800/80 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <p class="text-slate-400 uppercase tracking-[0.24em] text-xs font-bold mb-2">Clientes registrados</p>
-                    <h1 class="text-3xl font-black text-white">{{ total_clients }}</h1>
-                    <p class="text-slate-500 text-sm mt-1">Mostrando {{ clients|length }} de {{ total_clients }} clientes</p>
+                    <h1 class="text-3xl font-black text-white">{{ total_results }}</h1>
+                    <p class="text-slate-500 text-sm mt-1">Mostrando {{ items|length }} de {{ total_results }} clientes</p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-end">
                     <a href="{{ url_for('main.reclamaciones') }}" class="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-200 hover:bg-slate-900 transition">Volver a Reclamaciones</a>
@@ -19,14 +19,25 @@
             </div>
 
             <div class="px-6 py-6 space-y-6">
-                {% if edit_client %}
+
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="rounded-2xl border border-slate-700 bg-slate-900/60 px-5 py-3 text-sm text-slate-300">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% if edit_item %}
                 <div class="rounded-[1.5rem] border border-slate-800/80 bg-[#021119]/80 p-6">
                     <h2 class="text-xl font-bold text-white mb-4">Editar cliente</h2>
-                    <form method="POST" action="{{ url_for('main.editar_cliente', id_cliente=edit_client.id_cliente) }}">
+                    <form method="POST" action="{{ url_for('main.reclamaciones_actions', section='clientes', action_type='editar', item_id=edit_item.id_cliente) }}">
                         <div class="grid gap-4 sm:grid-cols-2 items-end">
                             <div>
                                 <label class="block mb-2 text-sm font-medium text-slate-400">Nombre</label>
-                                <input name="nombre" value="{{ edit_client.nombre }}" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                                <input name="nombre" value="{{ edit_item.nombre }}" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
                             </div>
                             <div class="flex flex-wrap gap-3 justify-start sm:justify-end">
                                 <button type="submit" class="rounded-full bg-brandGreen px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brandGreen/20 hover:bg-[#175b2f] transition">Guardar cambios</button>
@@ -56,7 +67,7 @@
                             </form>
                         </div>
                     </div>
-                    <div class="px-6 pb-4 text-sm text-slate-400">
+                    <div class="px-6 py-3 text-sm text-slate-400">
                         Mostrando {{ start }}-{{ end }} de {{ total_results }} clientes
                     </div>
                     <div class="overflow-x-auto">
@@ -69,14 +80,14 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800/90">
-                                {% for client in clients %}
+                                {% for item in items %}
                                 <tr class="bg-[#020f14]/80 hover:bg-[#051721]/80 transition-colors">
-                                    <td class="px-6 py-4 font-semibold text-white">{{ client.id_cliente }}</td>
-                                    <td class="px-6 py-4 text-slate-200">{{ client.nombre }}</td>
+                                    <td class="px-6 py-4 font-semibold text-white">{{ item.id_cliente }}</td>
+                                    <td class="px-6 py-4 text-slate-200">{{ item.nombre }}</td>
                                     <td class="px-6 py-4">
                                         <div class="flex flex-wrap gap-3">
-                                            <a href="{{ url_for('main.editar_cliente', id_cliente=client.id_cliente) }}" class="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Editar</a>
-                                            <form method="POST" action="{{ url_for('main.eliminar_cliente', id_cliente=client.id_cliente) }}" class="inline">
+                                            <a href="{{ url_for('main.reclamaciones_section', section='clientes', edit_id=item.id_cliente, page=page, search=search_query) }}" class="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Editar</a>
+                                            <form method="POST" action="{{ url_for('main.reclamaciones_actions', section='clientes', action_type='eliminar', item_id=item.id_cliente) }}" class="inline">
                                                 <button type="submit" onclick="return confirm('¿Eliminar este cliente?')" class="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 transition">Eliminar</button>
                                             </form>
                                         </div>
@@ -97,41 +108,42 @@
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-slate-400 text-xs">
                     <span>Reclamaciones - Clientes CRUD</span>
                     <nav class="inline-flex items-center gap-2">
-                        <a href="{{ url_for('main.reclamaciones_section', section='clientes', search=search_query, page=page-1) }}" class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full border border-slate-700 bg-slate-950/80 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition {% if page <= 1 %}opacity-40 pointer-events-none{% endif %}">←</a>
+                        <a href="{{ url_for('main.reclamaciones_section', section='clientes', search=search_query, page=page-1) }}"
+                           class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full border border-slate-700 bg-slate-950/80 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition {% if page <= 1 %}opacity-40 pointer-events-none{% endif %}">←</a>
+
                         {% for num in page_numbers %}
                             {% if num == '...' %}
                                 <span class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full text-xs text-slate-500">…</span>
                             {% elif num == page %}
                                 <span class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full bg-brandGreen text-xs font-semibold text-white">{{ num }}</span>
                             {% else %}
-                                <a href="{{ url_for('main.reclamaciones_section', section='clientes', search=search_query, page=num) }}" class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full border border-slate-700 bg-slate-950/80 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition">{{ num }}</a>
+                                <a href="{{ url_for('main.reclamaciones_section', section='clientes', search=search_query, page=num) }}"
+                                   class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full border border-slate-700 bg-slate-950/80 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition">{{ num }}</a>
                             {% endif %}
                         {% endfor %}
-                        <a href="{{ url_for('main.reclamaciones_section', section='clientes', search=search_query, page=page+1) }}" class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full border border-slate-700 bg-slate-950/80 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition {% if page >= total_pages %}opacity-40 pointer-events-none{% endif %}">→</a>
+
+                        <a href="{{ url_for('main.reclamaciones_section', section='clientes', search=search_query, page=page+1) }}"
+                           class="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-full border border-slate-700 bg-slate-950/80 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition {% if page >= total_pages %}opacity-40 pointer-events-none{% endif %}">→</a>
                     </nav>
                 </div>
             </div>
         </div>
     </div>
 </section>
-
 {% endblock %}
 
 {% block modals %}
-
-<!-- Cambiamos las clases del contenedor padre -->
 <div id="createClientModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4">
-    <!-- El div interno ya no necesita márgenes automáticos externos tan agresivos -->
     <div class="w-full max-w-2xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-bold text-white">Nuevo Cliente</h2>
-            <button type="button" onclick="document.getElementById('createClientModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">Cerrar</button>
+            <button type="button" onclick="document.getElementById('createClientModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
         </div>
-        <form method="POST" action="{{ url_for('main.crear_cliente') }}">
+        <form method="POST" action="{{ url_for('main.reclamaciones_actions', section='clientes', action_type='crear') }}">
             <div class="grid gap-4 sm:grid-cols-1">
                 <div>
                     <label class="block mb-2 text-sm font-medium text-slate-400">Nombre</label>
-                    <input name="nombre" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
+                    <input name="nombre" required placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
                 </div>
             </div>
             <div class="mt-6 flex justify-end gap-3">
@@ -141,6 +153,4 @@
         </form>
     </div>
 </div>
-
 {% endblock %}
-

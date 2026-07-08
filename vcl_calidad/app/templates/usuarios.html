@@ -44,6 +44,15 @@
                   {% endfor %}
                 </select>
               </div>
+              <div>
+                <label class="block mb-2 text-sm font-medium text-slate-400">Area</label>
+                <select name="id_area" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white">
+                  <option value="">Seleccionar área</option>
+                  {% for a in areas %}
+                  <option value="{{ a.id_area }}" {% if edit_user.id_area == a.id_area %}selected{% endif %}>{{ a.area }}</option>
+                  {% endfor %}
+                </select>
+              </div>
               <div class="flex items-center gap-3">
                 <label class="text-slate-400 text-sm">Activo</label>
                 <input type="checkbox" name="activo" value="1" {% if edit_user.activo %}checked{% endif %} />
@@ -84,6 +93,7 @@
                   <th class="px-6 py-4">Activo</th>
                   <th class="px-6 py-4">Permisos</th>
                   <th class="px-6 py-4">Acciones</th>
+                  <th class="px-6 py-4">Área</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800/90">
@@ -111,10 +121,11 @@
                       </form>
                     </div>
                   </td>
+                  <td class="px-6 py-4 text-slate-200">{{ u.area.area if u.area else 'N/A' }}</td>
                 </tr>
                 {% else %}
                 <tr class="bg-[#020f14]/80">
-                  <td colspan="7" class="px-6 py-12 text-center text-slate-500">No hay usuarios registrados aún.</td>
+                  <td colspan="8" class="px-6 py-12 text-center text-slate-500">No hay usuarios registrados aún.</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -159,6 +170,15 @@
           <select name="rol_id" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white">
             {% for r in roles %}
             <option value="{{ r.id }}">{{ r.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+         <div>
+          <label class="block mb-2 text-sm font-medium text-slate-400">Area</label>
+          <select name="id_area" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white">
+            {% for a in areas %}
+            <option value="{{ a.id_area }}">{{ a.area }}</option>
             {% endfor %}
           </select>
         </div>

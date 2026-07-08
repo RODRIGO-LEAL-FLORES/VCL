@@ -1,432 +1,291 @@
-from flask_login import current_user, login_required
-
-from . import main_bp
-
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
+from flask import render_template, redirect, url_for, request, flash, make_response
+from flask_login import login_required, current_user
+from datetime import datetime, date
 from app import db
-from app.models.defectos import Defecto
-from app.models.tipo import Tipo
+
+from app.models.reclamaciones_models import (
+    Categoria, Defecto, Ocurrencia, TipoDeReclamacion,
+    EstatusReclamacion, Contenedor
+)
+from app.models.reclamaciones_models.reclamaciones import Reclamacion
+from app.routes.main import main_bp
 from app.models.cliente import Cliente
- # Importamos el Blueprint creado en __init__.py
 
 
+# =========================================================================
+# VISTA PRINCIPAL: MENÚ DE OPCIONES DE RECLAMACIONES
+# =========================================================================
 @main_bp.route('/reclamaciones')
 @login_required
 def reclamaciones():
-    print(f"Usuario actual: {current_user.rol.id}")
     if not current_user.puede_ver_reclamaciones:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
 
+    return render_template('reclamaciones/reclamaciones.html')
 
 
-@main_bp.route('/reclamaciones/<section>')
+# =========================================================================
+# CONTROLADOR DINÁMICO POR SECCIONES (VISTAS GET / POST)
+# =========================================================================
+@main_bp.route('/reclamaciones/<section>', methods=['GET', 'POST'])
 @login_required
 def reclamaciones_section(section):
     if not current_user.puede_ver_reclamaciones:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
 
-    allowed = {
-        'nuevo': 'Nueva Reclamación',
-        'categorias': 'Categorías',
-        'defectos': 'Defectos',
-        'ocurrencias': 'Ocurrencias',
-        'tipos': 'Tipos de Reclamación',
-        'estatus': 'Estatus de Reclamaciones',
-        'clientes': 'Clientes',
-        'contenedores': 'Contenedores'
+    edit_id = request.args.get('edit_id', type=int)
+
+    # --- LÓGICA PARA REGISTROS DE RECLAMACIONES ---
+    if section == 'nuevo':
+        if request.method == 'POST':
+            try:
+                fecha_reporte_str      = request.form.get('fecha_reporte')
+                fecha_confirmacion_str = request.form.get('fecha_confirmacion')
+
+                fecha_reporte      = datetime.strptime(fecha_reporte_str, '%Y-%m-%d').date() if fecha_reporte_str else None
+                fecha_confirmacion = datetime.strptime(fecha_confirmacion_str, '%Y-%m-%d').date() if fecha_confirmacion_str else None
+                fecha_contencion   = datetime.strptime(request.form.get('fecha_contencion'), '%Y-%m-%d').date() if request.form.get('fecha_contencion') else None
+                fecha_CR_AC        = datetime.strptime(request.form.get('fecha_CR_AC'), '%Y-%m-%d').date() if request.form.get('fecha_CR_AC') else None
+                fecha_cierre       = datetime.strptime(request.form.get('fecha_cierre'), '%Y-%m-%d').date() if request.form.get('fecha_cierre') else None
+
+                dias_retrazo = 0
+                if fecha_reporte and fecha_confirmacion:
+                    dias_retrazo = (fecha_confirmacion - fecha_reporte).days
+
+                nueva_reclamacion = Reclamacion(
+                    id_reporte_cliente     = request.form.get('id_reporte_cliente', '').strip(),
+                    issue                  = request.form.get('issue', '').strip(),
+                    id_defecto             = request.form.get('id_defecto'),
+                    id_categoria           = request.form.get('id_categoria'),
+                    id_ocurrencia          = request.form.get('id_ocurrencia'),
+                    id_numero_contenedor   = request.form.get('id_numero_contenedor') or None,
+                    id_tipo_de_reclamacion = request.form.get('id_tipo_de_reclamacion'),
+                    id_cliente             = request.form.get('id_cliente') or None,
+                    id_estatus             = request.form.get('id_estatus'),
+                    numero_parte           = request.form.get('numero_parte', '').strip() or None,
+                    lote                   = request.form.get('lote', '').strip() or None,
+                    cantidad_piezas        = int(request.form.get('cantidad_piezas', 0)) or None,
+                    cantidad_kg            = float(request.form.get('cantidad_kg', 0)) or None,
+                    fecha_reporte          = fecha_reporte,
+                    fecha_confirmacion     = fecha_confirmacion,
+                    fecha_contencion       = fecha_contencion,
+                    fecha_CR_AC            = fecha_CR_AC,
+                    fecha_cierre           = fecha_cierre,
+                    dias_retrazo_al_reclamo = dias_retrazo,
+                    periodo                = request.form.get('periodo', '').strip() or None,
+                )
+                db.session.add(nueva_reclamacion)
+                db.session.commit()
+                flash('Reclamación registrada exitosamente.')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error al guardar: {e}')
+
+            return redirect(url_for('main.reclamaciones_section', section='nuevo'))
+
+        # GET
+        return render_template('reclamaciones/generar_registro.html',
+            registros         = Reclamacion.query.order_by(Reclamacion.id.desc()).limit(20).all(),
+            categorias        = Categoria.query.order_by(Categoria.categoria).all(),
+            defectos          = Defecto.query.order_by(Defecto.defecto).all(),
+            ocurrencias       = Ocurrencia.query.order_by(Ocurrencia.ocurrencia).all(),
+            tipos_reclamacion = TipoDeReclamacion.query.order_by(TipoDeReclamacion.tipo_reclamacion).all(),
+            estatus_list      = EstatusReclamacion.query.order_by(EstatusReclamacion.descripcion_status).all(),
+            clientes          = Cliente.query.order_by(Cliente.nombre).all(),
+            contenedores      = Contenedor.query.order_by(Contenedor.numero_contenedor).all(),
+        )
+
+    # --- LÓGICA PARA CATÁLOGOS ---
+    mapping = {
+        'categorias':        (Categoria,         'reclamaciones/categorias.html',       'categoria'),
+        'defectos':          (Defecto,            'reclamaciones/defectos.html',          'descripcion'),
+        'ocurrencias':       (Ocurrencia,         'reclamaciones/ocurrencias.html',       'ocurrencia'),
+        'tipos_reclamacion': (TipoDeReclamacion,  'reclamaciones/tipos_reclamacion.html', 'tipo_reclamacion'),
+        'estatus':           (EstatusReclamacion, 'reclamaciones/estatus.html',           'descripcion_status'),
+        'clientes':          (Cliente,            'reclamaciones/clientes.html',          'nombre'),
+        'contenedores':      (Contenedor,         'reclamaciones/contenedores.html',      'numero_contenedor'),
     }
 
-    if section not in allowed:
-        abort(404)
 
-    if section == 'clientes':
-        search_query = request.args.get('search', '').strip()
-        page = request.args.get('page', 1)
-        try:
-            page = int(page)
-        except (TypeError, ValueError):
-            page = 1
 
-        per_page = 10
-        clients_query = Cliente.query
+    if section in mapping:
+        model, template, field = mapping[section]
+
+        # Paginación y búsqueda
+        page         = request.args.get('page', 1, type=int)
+        search_query = request.args.get('search', '', type=str).strip()
+        per_page     = 20
+
+        query = model.query
         if search_query:
-            clients_query = clients_query.filter(Cliente.nombre.ilike(f'%{search_query}%'))
+            query = query.filter(getattr(model, field).ilike(f'%{search_query}%'))
 
-        total_results = clients_query.count()
-        total_pages = (total_results + per_page - 1) // per_page if total_results else 1
-        if page < 1:
-            page = 1
-        if page > total_pages:
-            page = total_pages
+        pagination = query.order_by(field).paginate(page=page, per_page=per_page, error_out=False)
+        total      = pagination.total
+        start      = (page - 1) * per_page + 1 if total > 0 else 0
+        end        = min(page * per_page, total)
 
-        clients = clients_query.order_by(Cliente.nombre).offset((page - 1) * per_page).limit(per_page).all()
-        start = (page - 1) * per_page + 1 if total_results else 0
-        end = min(page * per_page, total_results)
+        def build_page_numbers(current, total_pages):
+            pages = []
+            for n in range(1, total_pages + 1):
+                if n == 1 or n == total_pages or abs(n - current) <= 1:
+                    pages.append(n)
+                elif pages and pages[-1] != '...':
+                    pages.append('...')
+            return pages
 
-        if total_pages <= 7:
-            page_numbers = list(range(1, total_pages + 1))
-        else:
-            if page <= 4:
-                page_numbers = [1, 2, 3, 4, 5, '...', total_pages]
-            elif page >= total_pages - 3:
-                page_numbers = [1, '...', total_pages - 4, total_pages - 3, total_pages - 2, total_pages - 1, total_pages]
-            else:
-                page_numbers = [1, '...', page - 1, page, page + 1, '...', total_pages]
-
-        return render_template(
-            'clientes.html',
-            section_title=allowed[section],
-            section_key=section,
-            clients=clients,
-            total_results=total_results,
-            start=start,
-            end=end,
-            page=page,
-            total_pages=total_pages,
-            page_numbers=page_numbers,
-            search_query=search_query
+        return render_template(template,
+            items         = pagination.items,
+            edit_item     = model.query.get(edit_id) if edit_id else None,
+            page          = page,
+            total_pages   = pagination.pages,
+            page_numbers  = build_page_numbers(page, pagination.pages),
+            search_query  = search_query,
+            total_results = total,
+            start         = start,
+            end           = end,
+            section       = section,
         )
 
-    if section == 'defectos':
-        search_query = request.args.get('search', '').strip()
-        page = request.args.get('page', 1)
-        try:
-            page = int(page)
-        except (TypeError, ValueError):
-            page = 1
+    return redirect(url_for('main.reclamaciones_section', section='nuevo'))
 
-        per_page = 10
-        defectos_query = Defecto.query
-        if search_query:
-            defectos_query = defectos_query.filter(Defecto.descripcion.ilike(f'%{search_query}%'))
 
-        total_results = defectos_query.count()
-        total_pages = (total_results + per_page - 1) // per_page if total_results else 1
-        if page < 1:
-            page = 1
-        if page > total_pages:
-            page = total_pages
+# =========================================================================
+# RUTAS POST: PROCESAMIENTO CRUD CENTRALIZADO Y SEGURO
+# =========================================================================
+@main_bp.route('/reclamaciones/action/<section>/<action_type>', methods=['POST'])
+@main_bp.route('/reclamaciones/action/<section>/<action_type>/<int:item_id>', methods=['POST'])
+@login_required
+def reclamaciones_actions(section, action_type, item_id=None):
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
 
-        defectos = defectos_query.order_by(Defecto.descripcion).offset((page - 1) * per_page).limit(per_page).all()
-        start = (page - 1) * per_page + 1 if total_results else 0
-        end = min(page * per_page, total_results)
+    model_mapping = {
+        'categorias':        (Categoria,         'categoria',          'id_categorias'),
+        'defectos':          (Defecto,            'defecto',            'id_defecto'),
+        'ocurrencias':       (Ocurrencia,         'ocurrencia',         'id_ocurrencia'),
+        'tipos_reclamacion': (TipoDeReclamacion,  'tipo_reclamacion',   'id_tipo_de_reclamacion'),
+        'estatus':           (EstatusReclamacion, 'descripcion_status', 'id_estatus'),
+        'clientes':          (Cliente,            'nombre',             'id_cliente'),
+        'contenedores':      (Contenedor,         'numero_contenedor',  'id_numero_contenedor'),
+    }
 
-        if total_pages <= 7:
-            page_numbers = list(range(1, total_pages + 1))
-        else:
-            if page <= 4:
-                page_numbers = [1, 2, 3, 4, 5, '...', total_pages]
-            elif page >= total_pages - 3:
-                page_numbers = [1, '...', total_pages - 4, total_pages - 3, total_pages - 2, total_pages - 1, total_pages]
+    if section in model_mapping:
+        model, field_name, pk_name = model_mapping[section]
+
+        if action_type == 'crear':
+            value = request.form.get(field_name, '').strip()
+            if not value:
+                flash('El campo requerido no puede estar vacío.')
+                return redirect(url_for('main.reclamaciones_section', section=section))
+
+            if model.query.filter(getattr(model, field_name) == value).first():
+                flash('Este registro ya existe en el sistema.')
             else:
-                page_numbers = [1, '...', page - 1, page, page + 1, '...', total_pages]
+                db.session.add(model(**{field_name: value}))
+                db.session.commit()
+                flash('Registro creado con éxito.')
 
-        return render_template(
-            'defectos.html',
-            section_title=allowed[section],
-            section_key=section,
-            defectos=defectos,
-            total_results=total_results,
-            start=start,
-            end=end,
-            page=page,
-            total_pages=total_pages,
-            page_numbers=page_numbers,
-            search_query=search_query
-        )
-    
-    if section == 'tipos':
-        search_query = request.args.get('search', '').strip()
-        page = request.args.get('page', 1)
-        try:
-            page = int(page)
-        except (TypeError, ValueError):
-            page = 1
+        elif action_type == 'editar' and item_id:
+            value = request.form.get(field_name, '').strip()
+            if not value:
+                flash('El campo requerido no puede estar vacío.')
+                return redirect(url_for('main.reclamaciones_section', section=section))
 
-        per_page = 10
-        tipos_query = Tipo.query
-        if search_query:
-            tipos_query = tipos_query.filter(Tipo.nombre.ilike(f'%{search_query}%'))
+            obj       = model.query.get_or_404(item_id)
+            pk_column = getattr(model, pk_name)
+            existing  = model.query.filter(getattr(model, field_name) == value, pk_column != item_id).first()
 
-        total_results = tipos_query.count()
-        total_pages = (total_results + per_page - 1) // per_page if total_results else 1
-        if page < 1:
-            page = 1
-        if page > total_pages:
-            page = total_pages
-
-        tipos = tipos_query.order_by(Tipo.nombre).offset((page - 1) * per_page).limit(per_page).all()
-        start = (page - 1) * per_page + 1 if total_results else 0
-        end = min(page * per_page, total_results)
-
-        if total_pages <= 7:
-            page_numbers = list(range(1, total_pages + 1))
-        else:
-            if page <= 4:
-                page_numbers = [1, 2, 3, 4, 5, '...', total_pages]
-            elif page >= total_pages - 3:
-                page_numbers = [1, '...', total_pages - 4, total_pages - 3, total_pages - 2, total_pages - 1, total_pages]
+            if existing:
+                flash('Ya existe otro registro con ese mismo valor.')
             else:
-                page_numbers = [1, '...', page - 1, page, page + 1, '...', total_pages]
+                setattr(obj, field_name, value)
+                db.session.commit()
+                flash('Registro actualizado con éxito.')
 
-        return render_template(
-            'tipo.html',
-            section_title=allowed[section],
-            section_key=section,
-            tipos=tipos,
-            total_results=total_results,
-            start=start,
-            end=end,
-            page=page,
-            total_pages=total_pages,
-            page_numbers=page_numbers,
-            search_query=search_query
-        )
-    
-    
-    
-  
-    
-  
+        elif action_type == 'eliminar' and item_id:
+            obj = model.query.get_or_404(item_id)
+            try:
+                db.session.delete(obj)
+                db.session.commit()
+                flash('Registro eliminado correctamente.')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'No se pudo eliminar: puede tener registros relacionados. ({e})')
 
-    return render_template('reclamaciones_section.html', section_title=allowed[section], section_key=section)
-
-# ==========================================
-#  CRUD clientes
-# ==========================================
+    return redirect(url_for('main.reclamaciones_section', section=section))
 
 
-@main_bp.route('/reclamaciones/clientes/crear', methods=['POST'])
+# =========================================================================
+# EDITAR RECLAMACIÓN INDIVIDUAL
+# =========================================================================
+@main_bp.route('/reclamaciones/action/nuevo/editar/<int:item_id>', methods=['POST'])
 @login_required
-def crear_cliente():
-    
+def reclamaciones_editar(item_id):
     if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
-        return redirect(url_for('main.home'))
-    
-
-    nombre = request.form.get('nombre', '').strip()
-    if not nombre:
-        flash('El nombre del cliente es obligatorio.')
-        return redirect(url_for('main.reclamaciones_section', section='clientes'))
-
-    cliente = Cliente(nombre=nombre)
-    db.session.add(cliente)
-    db.session.commit()
-
-    return redirect(url_for('main.reclamaciones_section', section='clientes'))
-
-
-@main_bp.route('/reclamaciones/clientes/editar/<int:id_cliente>', methods=['GET', 'POST'])
-@login_required
-def editar_cliente(id_cliente):
-    if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
+        flash("No tienes autorización.")
         return redirect(url_for('main.home'))
 
-    cliente = Cliente.query.get_or_404(id_cliente)
+    registro = Reclamacion.query.get_or_404(item_id)
 
-    if request.method == 'POST':
-        nombre = request.form.get('nombre', '').strip()
-        if not nombre:
-            flash('El nombre del cliente es obligatorio.')
-            return redirect(url_for('main.editar_cliente', id_cliente=id_cliente))
+    try:
+        fecha_reporte_str      = request.form.get('fecha_reporte')
+        fecha_confirmacion_str = request.form.get('fecha_confirmacion')
 
-        cliente.nombre = nombre
+        registro.id_reporte_cliente     = request.form.get('id_reporte_cliente', '').strip()
+        registro.issue                  = request.form.get('issue', '').strip()
+        registro.id_defecto             = request.form.get('id_defecto')
+        registro.id_categoria           = request.form.get('id_categoria')
+        registro.id_ocurrencia          = request.form.get('id_ocurrencia')
+        registro.id_numero_contenedor   = request.form.get('id_numero_contenedor') or None
+        registro.id_tipo_de_reclamacion = request.form.get('id_tipo_de_reclamacion')
+        registro.id_cliente             = request.form.get('id_cliente') or None
+        registro.id_estatus             = request.form.get('id_estatus')
+        registro.numero_parte           = request.form.get('numero_parte', '').strip() or None
+        registro.lote                   = request.form.get('lote', '').strip() or None
+        registro.cantidad_piezas        = int(request.form.get('cantidad_piezas', 0)) or None
+        registro.cantidad_kg            = float(request.form.get('cantidad_kg', 0)) or None
+        registro.periodo                = request.form.get('periodo', '').strip() or None
+
+        registro.fecha_reporte      = datetime.strptime(fecha_reporte_str, '%Y-%m-%d').date() if fecha_reporte_str else None
+        registro.fecha_confirmacion = datetime.strptime(fecha_confirmacion_str, '%Y-%m-%d').date() if fecha_confirmacion_str else None
+        registro.fecha_contencion   = datetime.strptime(request.form.get('fecha_contencion'), '%Y-%m-%d').date() if request.form.get('fecha_contencion') else None
+        registro.fecha_CR_AC        = datetime.strptime(request.form.get('fecha_CR_AC'), '%Y-%m-%d').date() if request.form.get('fecha_CR_AC') else None
+        registro.fecha_cierre       = datetime.strptime(request.form.get('fecha_cierre'), '%Y-%m-%d').date() if request.form.get('fecha_cierre') else None
+
+        if registro.fecha_reporte and registro.fecha_confirmacion:
+            registro.dias_retrazo_al_reclamo = (registro.fecha_confirmacion - registro.fecha_reporte).days
+
         db.session.commit()
-        return redirect(url_for('main.reclamaciones_section', section='clientes'))
+        flash('Reclamación actualizada correctamente.')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al actualizar: {e}')
 
-    clients = Cliente.query.order_by(Cliente.nombre).all()
-    total_results = len(clients)
-    page = 1
-    total_pages = 1
-    page_numbers = [1]
-    start = total_results and 1 or 0
-    end = total_results
-    return render_template(
-        'clientes.html',
-        section_title='Clientes',
-        section_key='clientes',
-        clients=clients,
-        total_results=total_results,
-        start=start,
-        end=end,
-        page=page,
-        total_pages=total_pages,
-        page_numbers=page_numbers,
-        search_query='',
-        edit_client=cliente
-    )
+    return redirect(url_for('main.reclamaciones_section', section='nuevo'))
 
 
-@main_bp.route('/reclamaciones/clientes/eliminar/<int:id_cliente>', methods=['POST'])
+# =========================================================================
+# ELIMINAR RECLAMACIÓN INDIVIDUAL
+# =========================================================================
+@main_bp.route('/reclamaciones/action/nuevo/eliminar/<int:item_id>', methods=['POST'])
 @login_required
-def eliminar_cliente(id_cliente):
+def reclamaciones_eliminar(item_id):
     if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
+        flash("No tienes autorización.")
         return redirect(url_for('main.home'))
 
-    cliente = Cliente.query.get_or_404(id_cliente)
-    db.session.delete(cliente)
-    db.session.commit()
+    registro = Reclamacion.query.get_or_404(item_id)
 
-    return redirect(url_for('main.reclamaciones_section', section='clientes'))
-
-# ==========================================
-#  CRUD DEFECTOS
-# ==========================================
-
-@main_bp.route('/reclamaciones/defectos/crear', methods=['POST'])
-@login_required
-def crear_defecto():
-    if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
-        return redirect(url_for('main.home'))
-
-    descripcion = request.form.get('descripcion', '').strip()
-    if not descripcion:
-        flash('La descripción del defecto es obligatoria.')
-        return redirect(url_for('main.reclamaciones_section', section='defectos'))
-
-    defecto = Defecto(descripcion=descripcion)
-    db.session.add(defecto)
-    db.session.commit()
-
-    return redirect(url_for('main.reclamaciones_section', section='defectos'))
-
-
-@main_bp.route('/reclamaciones/defectos/editar/<int:id_defecto>', methods=['GET', 'POST'])
-@login_required
-def editar_defecto(id_defecto):
-    if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
-        return redirect(url_for('main.home'))
-
-    defecto = Defecto.query.get_or_404(id_defecto)
-
-    if request.method == 'POST':
-        descripcion = request.form.get('descripcion', '').strip()
-        if not descripcion:
-            flash('La descripción del defecto es obligatoria.')
-            return redirect(url_for('main.editar_defecto', id_defecto=id_defecto))
-
-        defecto.descripcion = descripcion
+    try:
+        db.session.delete(registro)
         db.session.commit()
-        return redirect(url_for('main.reclamaciones_section', section='defectos'))
+        flash('Reclamación eliminada correctamente.')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar: {e}')
 
-    search_query = ''
-    page = 1
-    per_page = 10
-    defectos_query = Defecto.query
-    total_results = defectos_query.count()
-    total_pages = (total_results + per_page - 1) // per_page if total_results else 1
-    if page < 1:
-        page = 1
-    if page > total_pages:
-        page = total_pages
-    defectos = defectos_query.order_by(Defecto.descripcion).offset((page - 1) * per_page).limit(per_page).all()
-    start = (page - 1) * per_page + 1 if total_results else 0
-    end = min(page * per_page, total_results)
-
-    if total_pages <= 7:
-        page_numbers = list(range(1, total_pages + 1))
-    else:
-        if page <= 4:
-            page_numbers = [1, 2, 3, 4, 5, '...', total_pages]
-        elif page >= total_pages - 3:
-            page_numbers = [1, '...', total_pages - 4, total_pages - 3, total_pages - 2, total_pages - 1, total_pages]
-        else:
-            page_numbers = [1, '...', page - 1, page, page + 1, '...', total_pages]
-
-    return render_template(
-        'defectos.html',
-        section_title='Defectos',
-        section_key='defectos',
-        defectos=defectos,
-        total_results=total_results,
-        start=start,
-        end=end,
-        page=page,
-        total_pages=total_pages,
-        page_numbers=page_numbers,
-        search_query=search_query,
-        edit_defecto=defecto
-    )
-
-
-@main_bp.route('/reclamaciones/defectos/eliminar/<int:id_defecto>', methods=['POST'])
-@login_required
-def eliminar_defecto(id_defecto):
-    if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
-        return redirect(url_for('main.home'))
-
-    defecto = Defecto.query.get_or_404(id_defecto)
-    db.session.delete(defecto)
-    db.session.commit()
-
-    return redirect(url_for('main.reclamaciones_section', section='defectos'))
-
-
-
-# ==========================================
-#  CRUD TIPOS
-# ==========================================
-
-@main_bp.route('/reclamaciones/tipos/crear', methods=['POST'])
-@login_required
-def crear_tipo():
-    if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
-        return redirect(url_for('main.home'))
-
-    nombre = request.form.get('nombre', '').strip()
-    if not nombre:
-        flash('El nombre del tipo es obligatorio.')
-        return redirect(url_for('main.reclamaciones_section', section='tipos'))
-    tipo_nuevo = Tipo(nombre=nombre)
-    db.session.add(tipo_nuevo)
-    db.session.commit()
-
-    return redirect(url_for('main.reclamaciones_section', section='tipos'))
-
-@main_bp.route('/reclamaciones/tipos/editar/<int:id_tipo>', methods=['GET', 'POST'])
-@login_required
-def editar_tipo(id_tipo):
-    if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
-        return redirect(url_for('main.home'))
-
-    tipo_editar = Tipo.query.get_or_404(id_tipo)
-
-    if request.method == 'POST':
-        nombre = request.form.get('nombre', '').strip()
-        if not nombre:
-            flash('El nombre del tipo es obligatorio.')
-            return redirect(url_for('main.editar_tipo', id_tipo=id_tipo))
-
-        tipo_editar.nombre = nombre
-        db.session.commit()
-        return redirect(url_for('main.reclamaciones_section', section='tipos'))
-
-    return render_template(
-        'editar_tipo.html',
-        section_title='Editar Tipo',
-        section_key='tipos',
-        tipo=tipo_editar
-    )
-    
-@main_bp.route('/reclamaciones/tipos/eliminar/<int:id_tipo>', methods=['POST'])
-@login_required
-def eliminar_tipo(id_tipo):
-    if not current_user.puede_ver_reclamaciones:
-        flash("No tienes autorización para acceder a este módulo.")
-        return redirect(url_for('main.home'))
-
-    tipo_eliminar = Tipo.query.get_or_404(id_tipo)
-    db.session.delete(tipo_eliminar)
-    db.session.commit()
-
-    return redirect(url_for('main.reclamaciones_section', section='tipos'))
+    return redirect(url_for('main.reclamaciones_section', section='nuevo'))

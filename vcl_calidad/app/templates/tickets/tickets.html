@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Tickets - VC Laminations{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-7xl relative min-h-[calc(100vh-12rem)]">
+    <div class="border-b border-slate-800/60 pb-6 mb-10">
+        <h1 class="text-3xl font-black tracking-wide text-white uppercase">Tickets</h1>
+        <p class="text-slate-400 font-medium text-sm mt-1">
+            Bienvenido, <span class="text-white">{{ current_user.nombre }}</span>. Selecciona el área que deseas administrar.
+        </p>
+         <div class="mt-10 flex justify-end">
+        <a href="{{ url_for('main.home') }}" class="text-sm font-semibold text-slate-300 hover:text-emerald-400 transition-colors">← Volver al panel</a>
+    </div>
+    </div>
+
+    {% if current_user.puede_ver_reclamaciones %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Alta de ticket -->
+        <a href="{{ url_for('main.tickets_create') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-slate-800/80 shadow-xl shadow-slate-950/20 hover:border-emerald-500 transition-all text-left">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-white">Alta de Ticket</h2>
+            </div>
+            <p class="text-slate-400 text-sm">Crear un nuevo ticket como emisor con área responsable y color.</p>
+        </a>
+
+        <!-- Seguimiento de ticket -->
+        <a href="{{ url_for('main.seguimiento_tickets') }}" class="group block p-6 rounded-3xl bg-amber-950/30 border border-amber-700/60 shadow-xl shadow-slate-950/20 hover:border-amber-400 transition-all">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/20 text-amber-400">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-amber-300">Seguimiento de Ticket</h2>
+            </div>
+            <p class="text-slate-400 text-sm">Ver los tickets asignados a tu área que aún están abiertos o en proceso.</p>
+        </a>
+
+        <!-- Cerrar ticket -->
+        <a href="{{ url_for('main.cerrar_tickets') }}" class="group block p-6 rounded-3xl bg-[#0f172a]/90 border border-slate-800/80 shadow-xl shadow-slate-950/20 hover:border-slate-500 transition-all">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-sky-500/20 text-sky-400">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m12-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-sky-300">Cerrar Ticket</h2>
+            </div>
+            <p class="text-slate-400 text-sm">Ver tus tickets pendientes de validación para cerrarlos como emisor.</p>
+        </a>
+
+       
+
+        <!-- Colores -->
+        <a href="{{ url_for('main.tickets_section', section='colores') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-slate-800/80 shadow-xl shadow-slate-950/20 hover:border-emerald-500 transition-all">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-white">Colores de Ticket</h2>
+            </div>
+            <p class="text-slate-400 text-sm">Administrar los colores y su descripción para clasificar la prioridad de cada ticket.</p>
+        </a>
+
+        <!-- Áreas -->
+        <a href="{{ url_for('main.tickets_section', section='areas') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-slate-800/80 shadow-xl shadow-slate-950/20 hover:border-emerald-500 transition-all">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-white">Áreas</h2>
+            </div>
+            <p class="text-slate-400 text-sm">Gestionar las áreas responsables a las que se pueden asignar tickets.</p>
+        </a>
+
+        <!-- Estatus -->
+        <a href="{{ url_for('main.tickets_section', section='estatus') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-slate-800/80 shadow-xl shadow-slate-950/20 hover:border-emerald-500 transition-all">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-white">Estatus</h2>
+            </div>
+            <p class="text-slate-400 text-sm">Configurar los estados de seguimiento disponibles para cada ticket.</p>
+        </a>
+
+    </div>
+
+    {% else %}
+    <div class="text-center py-20">
+        <p class="text-red-400 font-bold">No tienes permisos para acceder a este módulo.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

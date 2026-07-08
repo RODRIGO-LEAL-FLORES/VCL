@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Demasiadas solicitudes{% endblock %}
+
+{% block content %}
+<section class="antialiased">
+  <div class="mx-auto max-w-3xl px-4 py-16">
+    <div class="rounded-[2rem] border border-slate-800/80 bg-[#02131c]/95 p-8 shadow-2xl shadow-black/60">
+      <h1 class="text-4xl font-black text-white mb-4">429</h1>
+      <p class="text-slate-300 mb-6">Has alcanzado el límite de solicitudes. Por favor espera un momento y vuelve a intentarlo.</p>
+      <p class="text-slate-500 text-sm">Si esto ocurre frecuentemente, contacta con el administrador del sitio.</p>
+      <a href="{{ url_for('main.home') }}" class="inline-flex items-center justify-center rounded-full bg-brandGreen px-5 py-3 text-sm font-semibold text-white hover:bg-[#175b2f] transition mt-6">Volver al inicio</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

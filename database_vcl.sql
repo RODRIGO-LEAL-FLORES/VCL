@@ -20,14 +20,22 @@ CREATE TABLE Usuarios (
     rol_id INT NOT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activo BOOLEAN DEFAULT TRUE,
+    id_area INT,
     puede_ver_reclamaciones BOOLEAN DEFAULT TRUE,
     puede_ver_tickets BOOLEAN DEFAULT TRUE,
     puede_ver_reportes BOOLEAN DEFAULT FALSE,
     puede_gestionar_usuarios BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (rol_id) REFERENCES Roles(id)
+    FOREIGN KEY (rol_id) REFERENCES Roles(id),
+    FOREIGN KEY (id_area) REFERENCES Area(id_area)
 );
 
+ALTER TABLE usuarios
+ADD COLUMN id_area INTEGER;
 
+ALTER TABLE usuarios
+ADD CONSTRAINT usuarios_id_area_fkey
+FOREIGN KEY (id_area)
+REFERENCES areas(id_area);
 
 
 -- RECLAMACIONES TABLES
@@ -104,7 +112,8 @@ CREATE TABLE Reclamaciones (
 CREATE TABLE Color_Ticket (
     id_color SERIAL PRIMARY KEY,
     color_ticket VARCHAR(20) NOT NULL UNIQUE,
-    descripcion_color_ticket VARCHAR(255)
+    descripcion_color_ticket VARCHAR(255),
+    dias_resolucion INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE Area (
@@ -118,9 +127,10 @@ CREATE TABLE Estatus_Ticket (
     status_descripcion VARCHAR(100) NOT NULL UNIQUE
 );
 
-CREATE TABLE Ticket (
+CREATE TABLE tickets (
     id_folio_ticket SERIAL PRIMARY KEY,
     id_color_ticket INT,
+    id_usuario_creador INT NOT NULL,
     emisor VARCHAR(100),
     id_area_responsable INT,
     fecha_emicion DATE NOT NULL,
@@ -128,11 +138,24 @@ CREATE TABLE Ticket (
     fecha_cierre DATE,
     id_estatus_ticket INT NOT NULL,
     dias_retrazo INT DEFAULT 0,
+    evidencia_resolucion TEXT,
+    problematica TEXT,
+    accion_correctiva TEXT,
     FOREIGN KEY (id_color_ticket) REFERENCES Color_Ticket(id_color),
     FOREIGN KEY (id_area_responsable) REFERENCES Area(id_area),
-    FOREIGN KEY (id_estatus_ticket) REFERENCES Estatus_Ticket(id_estatus_ticket)
+    FOREIGN KEY (id_estatus_ticket) REFERENCES Estatus_Ticket(id_estatus_ticket),
+    FOREIGN KEY (id_usuario_creador) REFERENCES Usuarios(id)
 );
 
+
+vcl=# ALTER TABLE tickets
+vcl-#   ADD COLUMN id_usuario_creador INTEGER,
+vcl-#   ADD COLUMN evidencia_resolucion TEXT;
+ALTER TABLE
+vcl=# ALTER TABLE tickets
+vcl-#   ADD CONSTRAINT tickets_id_usuario_creador_fkey
+vcl-#   FOREIGN KEY (id_usuario_creador) REFERENCES usuarios(id);
+ALTER TABL
 -- INSERT ROLES Y ÁREAS
 
 INSERT INTO Roles (nombre) VALUES 
