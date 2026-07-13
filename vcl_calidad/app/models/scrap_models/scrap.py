@@ -24,8 +24,8 @@ class Scrap(db.Model):
     numero_parte = db.Column(db.String(50), nullable=False)
     lote = db.Column(db.String(50), nullable=False)
     peso = db.Column(db.Numeric(10, 2), nullable=False)
-    cantidad_retrabajado = db.Column(db.Integer, default=0)
-    cantidad_ng = db.Column(db.Integer, default=0)
+    cantidad_retrabajado = db.Column(db.Numeric(10, 2), default=0)
+    cantidad_ng = db.Column(db.Numeric(10, 2), default=0)
 
     # Relaciones para usar fácilmente en Jinja2 (ej: registro.maquina.nombre)
     maquina = db.relationship('Maquina', backref='registros_scrap')

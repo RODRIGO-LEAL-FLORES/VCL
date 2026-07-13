@@ -47,35 +47,89 @@
         </div>
     </header>
 
-    <div id="side-menu" class="fixed inset-y-0 right-0 w-full sm:w-80 bg-[#020e14]/95 backdrop-blur-lg border-l border-slate-800/50 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between shadow-2xl shadow-black">
-        <div class="pt-32 px-8 flex flex-col gap-6">
-            <p class="text-[10px] font-black tracking-widest text-slate-500 uppercase border-b border-slate-800/50 pb-2">Navegación</p>
-            
-            {% if not current_user.is_authenticated %}
-            <a href="/welcome" class="text-xl font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center justify-between group py-2">
-                <span>Iniciar Sesión</span>
-            </a>
-            {% endif %}
+   <div id="side-menu" class="fixed inset-y-0 right-0 w-full sm:w-80 bg-[#020e14]/95 backdrop-blur-lg border-l border-slate-800/50 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between shadow-2xl shadow-black overflow-y-auto">
+    <div class="pt-32 px-8 flex flex-col gap-5 pb-10">
+        <p class="text-[10px] font-black tracking-widest text-slate-500 uppercase border-b border-slate-800/50 pb-2">Navegación</p>
 
-            <a href="/" class="text-xl font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center justify-between group py-2">
-                <span>Inicio / Panel</span>
-            </a>
+        {% if not current_user.is_authenticated %}
+        <a href="/welcome" class="text-xl font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center justify-between group py-2">
+            <span>Iniciar Sesión</span>
+        </a>
+        {% endif %}
 
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('main.home') }}" class="text-xl font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center justify-between group py-2">
-                <span>Home</span>
-            </a>
-            <a href="{{ url_for('main.logout') }}" class="text-xl font-bold tracking-wide text-red-500 hover:text-red-400 transition-colors flex items-center justify-between group py-2 mt-10 border-t border-slate-800/50 pt-6">
-                <span>Cerrar Sesión</span>
-            </a>
-            {% endif %}
-        </div>
+        <a href="/" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            <span>Inicio / Panel</span>
+        </a>
 
-        <div class="p-8 border-t border-slate-900 bg-[#01080c]">
-            <p class="text-[9px] font-bold tracking-widest text-slate-600 uppercase mb-1">Gestión de Reclamaciones y Tickets</p>
-            <span class="text-xs text-slate-400 font-semibold">v1.0.0 — 2026</span>
-        </div>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.home') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+            <span>Home</span>
+        </a>
+
+        <p class="text-[10px] font-black tracking-widest text-slate-500 uppercase border-b border-slate-800/50 pb-2 pt-2">Módulos</p>
+
+        {% if current_user.puede_ver_reclamaciones %}
+        <a href="{{ url_for('main.reclamaciones') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <span>Reclamaciones</span>
+        </a>
+        {% endif %}
+
+        {% if current_user.puede_ver_reclamaciones %}
+        <a href="{{ url_for('main.tickets') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+            </svg>
+            <span>Tickets Soporte</span>
+        </a>
+        {% endif %}
+
+        {% if current_user.puede_ver_scrap %}
+        <a href="{{ url_for('main.scrap') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+            <span>Control de Scrap</span>
+        </a>
+        {% endif %}
+
+        {% if current_user.puede_ver_reportes %}
+        <a href="{{ url_for('main.scrap_reportes') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            </svg>
+            <span>Reportes</span>
+        </a>
+        {% endif %}
+
+        {% if current_user.puede_gestionar_usuarios %}
+        <a href="{{ url_for('main.usuarios') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+            <span>Usuarios & Roles</span>
+        </a>
+        {% endif %}
+
+        <a href="{{ url_for('main.logout') }}" class="text-xl font-bold tracking-wide text-red-500 hover:text-red-400 transition-colors flex items-center justify-between group py-2 mt-6 border-t border-slate-800/50 pt-6">
+            <span>Cerrar Sesión</span>
+        </a>
+        {% endif %}
     </div>
+
+    <div class="p-8 border-t border-slate-900 bg-[#01080c]">
+        <p class="text-[9px] font-bold tracking-widest text-slate-600 uppercase mb-1">Gestión de Reclamaciones y Tickets</p>
+        <span class="text-xs text-slate-400 font-semibold">v1.0.0 — 2026</span>
+    </div>
+</div>
 
     <div id="menu-backdrop" class="fixed inset-0 bg-black/40 z-30 hidden backdrop-blur-sm transition-opacity duration-300 opacity-0"></div>
 

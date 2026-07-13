@@ -3,57 +3,57 @@
 {% block title %}Generar Registro de Scrap{% endblock %}
 
 {% block content %}
-<section class="antialiased max-w-7xl mx-auto px-4 lg:px-12 py-8">
-    <div class="bg-[#020f14]/90 border border-slate-800/80 shadow-2xl rounded-[2rem] overflow-hidden">
+<section class="antialiased max-w-7xl mx-auto px-3 sm:px-4 lg:px-12 py-4 sm:py-8">
+    <div class="bg-[#020f14]/90 border border-slate-800/80 shadow-2xl rounded-2xl sm:rounded-[2rem] overflow-hidden">
 
         <!-- Header -->
-        <div class="flex justify-between items-center p-8 pb-6">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 p-5 sm:p-8 sm:pb-6">
             <div>
-                <h1 class="text-3xl font-black text-white">Registro de Scrap</h1>
+                <h1 class="text-2xl sm:text-3xl font-black text-white">Registro de Scrap</h1>
                 <p class="text-slate-500 text-sm mt-1">Control de pesos, defectos y trazabilidad.</p>
             </div>
             <div class="flex items-center gap-3">
                 <a href="{{ url_for('main.scrap') }}"
-                   class="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-200 hover:bg-slate-900 transition">
+                   class="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-slate-200 hover:bg-slate-900 transition whitespace-nowrap">
                     &lsaquo; Menú
                 </a>
                 <button type="button" onclick="document.getElementById('registroModal').classList.remove('hidden')"
-                        class="rounded-full bg-brandGreen px-5 py-2 text-xs font-bold uppercase text-white shadow-lg hover:bg-[#175b2f] transition">
+                        class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-full bg-brandGreen px-5 sm:px-6 py-3 text-xs sm:text-sm font-bold uppercase text-white shadow-lg hover:bg-[#175b2f] transition whitespace-nowrap">
                     + Nuevo Registro
                 </button>
             </div>
         </div>
 
         <!-- KPI strip -->
-        <div class="grid grid-cols-3 border-t border-b border-slate-800/60">
-            <div class="px-8 py-5 border-r border-slate-800/60">
+        <div class="grid grid-cols-1 sm:grid-cols-3 border-t border-b border-slate-800/60">
+            <div class="px-6 sm:px-8 py-4 sm:py-5 border-b sm:border-b-0 sm:border-r border-slate-800/60">
                 <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Registros totales</p>
                 <p class="text-2xl font-black text-brandGreen">{{ registros | length }}</p>
             </div>
-            <div class="px-8 py-5 border-r border-slate-800/60">
+            <div class="px-6 sm:px-8 py-4 sm:py-5 border-b sm:border-b-0 sm:border-r border-slate-800/60">
                 <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Peso total (kg)</p>
                 <p class="text-2xl font-black text-amber-400">{{ registros | sum(attribute='peso') | round(1) if registros else '—' }}</p>
             </div>
-            <div class="px-8 py-5">
+            <div class="px-6 sm:px-8 py-4 sm:py-5">
                 <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Peso NG</p>
                 <p class="text-2xl font-black text-red-400">{{ registros | sum(attribute='cantidad_ng') if registros else '—' }}</p>
             </div>
         </div>
 
         <!-- Layout: tabla + panel -->
-        <div class="flex" style="min-height:420px">
+        <div class="flex flex-col lg:flex-row" style="min-height:420px">
 
             <!-- Tabla -->
             <div class="flex-1 overflow-x-auto">
-                <table class="w-full text-left text-slate-300">
+                <table class="w-full text-left text-slate-300 min-w-[640px]">
                     <thead class="text-[10px] uppercase text-slate-500 border-b border-slate-800">
                         <tr>
-                            <th class="p-4 pl-8">Lote</th>
-                            <th class="p-4">Cliente</th>
-                            <th class="p-4">Operador</th>
-                            <th class="p-4">Defecto</th>
-                            <th class="p-4">Estatus</th>
-                            <th class="p-4">Acciones</th>
+                            <th class="p-3 sm:p-4 pl-4 sm:pl-8">Lote</th>
+                            <th class="p-3 sm:p-4">Cliente</th>
+                            <th class="p-3 sm:p-4">Operador</th>
+                            <th class="p-3 sm:p-4">Defecto</th>
+                            <th class="p-3 sm:p-4">Estatus</th>
+                            <th class="p-3 sm:p-4">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/60">
@@ -67,13 +67,15 @@
                             data-maquina="{{ reg.maquina.nombre if reg.maquina else 'N/A' }}"
                             data-operador="{{ reg.operador.nombre if reg.operador else 'N/A' }}"
                             data-defecto="{{ reg.defecto.defecto if reg.defecto else 'N/A' }}"
-                            data-turno="{{ reg.turno or 'N/A' }}"
+                            data-turno="{{ reg.turno.nombre_turno if reg.turno else 'N/A' }}"
                             data-peso="{{ reg.peso or 0 }}"
                             data-retrabajo="{{ reg.cantidad_retrabajado or 0 }}"
                             data-ng="{{ reg.cantidad_ng or 0 }}"
                             data-fecha="{{ reg.fecha_registro.strftime('%d/%m/%Y') if reg.fecha_registro else 'N/A' }}"
                             data-hora="{{ reg.fecha_registro.strftime('%H:%M') if reg.fecha_registro else 'N/A' }}"
                             data-estatus="{{ reg.estatus.descripcion_status if reg.estatus else 'N/A' }}"
+                            data-tipo-laminacion="{{ reg.tipo_laminacion.especificacion if reg.tipo_laminacion else 'N/A' }}"
+                            data-tipo-acero="{{ reg.tipo_acero.especificacion if reg.tipo_acero else 'N/A' }}"
                             data-id-maquina="{{ reg.id_maquina or '' }}"
                             data-id-operador="{{ reg.id_operador or '' }}"
                             data-id-supervisor="{{ reg.id_supervisor or '' }}"
@@ -84,21 +86,21 @@
                             data-id-acero="{{ reg.id_tipo_acero or '' }}"
                             data-id-laminacion="{{ reg.id_tipo_laminacion or '' }}">
 
-                            <td class="p-4 pl-8 font-mono text-sm">{{ reg.lote }}</td>
-                            <td class="p-4">{{ reg.cliente.nombre if reg.cliente else 'N/A' }}</td>
-                            <td class="p-4 text-slate-400">{{ reg.operador.nombre if reg.operador else 'N/A' }}</td>
-                            <td class="p-4 text-slate-500 text-sm">{{ reg.defecto.defecto if reg.defecto else 'N/A' }}</td>
-                            <td class="p-4">
+                            <td class="p-3 sm:p-4 pl-4 sm:pl-8 font-mono text-sm">{{ reg.lote }}</td>
+                            <td class="p-3 sm:p-4">{{ reg.cliente.nombre if reg.cliente else 'N/A' }}</td>
+                            <td class="p-3 sm:p-4 text-slate-400">{{ reg.operador.nombre if reg.operador else 'N/A' }}</td>
+                            <td class="p-3 sm:p-4 text-slate-500 text-sm">{{ reg.defecto.defecto if reg.defecto else 'N/A' }}</td>
+                            <td class="p-3 sm:p-4">
                                 {% set desc = reg.estatus.descripcion_status | lower if reg.estatus else '' %}
                                 {% if 'rechaz' in desc %}
-                                    <span class="px-3 py-1 rounded-full bg-red-500/15 text-red-400 text-xs font-semibold">{{ reg.estatus.descripcion_status }}</span>
+                                    <span class="px-3 py-1 rounded-full bg-red-500/15 text-red-400 text-xs font-semibold whitespace-nowrap">{{ reg.estatus.descripcion_status }}</span>
                                 {% elif 'retrabaj' in desc or 'revision' in desc %}
-                                    <span class="px-3 py-1 rounded-full bg-brandGreen/15 text-brandGreen text-xs font-semibold">{{ reg.estatus.descripcion_status }}</span>
+                                    <span class="px-3 py-1 rounded-full bg-brandGreen/15 text-brandGreen text-xs font-semibold whitespace-nowrap">{{ reg.estatus.descripcion_status }}</span>
                                 {% else %}
-                                    <span class="px-3 py-1 rounded-full bg-slate-700/60 text-slate-300 text-xs font-semibold">{{ reg.estatus.descripcion_status if reg.estatus else 'N/A' }}</span>
+                                    <span class="px-3 py-1 rounded-full bg-slate-700/60 text-slate-300 text-xs font-semibold whitespace-nowrap">{{ reg.estatus.descripcion_status if reg.estatus else 'N/A' }}</span>
                                 {% endif %}
                             </td>
-                            <td class="p-4">
+                            <td class="p-3 sm:p-4">
                                 <div class="flex gap-3 items-center" onclick="event.stopPropagation()">
                                     <!-- Ver detalle -->
                                     <button type="button" onclick="selectRow({{ loop.index0 }})"
@@ -128,7 +130,7 @@
             </div>
 
             <!-- Panel detalle lateral -->
-            <div class="w-80 border-l border-slate-800/60 flex flex-col flex-shrink-0">
+            <div class="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-800/60 flex flex-col flex-shrink-0">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/60">
                     <span class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Detalle del Lote</span>
                     <button type="button" onclick="clearDetail()" class="text-slate-600 hover:text-slate-300 transition">
@@ -212,6 +214,37 @@
             </div>
 
         </div>
+
+        <!-- Paginación -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 sm:px-8 py-5 border-t border-slate-800/60">
+            <p class="text-xs text-slate-500">Registro de Scrap</p>
+            <nav class="flex items-center gap-2">
+                <a href="{{ url_for('main.scrap_section', section='nuevo', page=pagination.prev_num) if pagination.has_prev else '#' }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-full border border-slate-700 text-slate-400 hover:bg-slate-800 transition {% if not pagination.has_prev %}opacity-30 pointer-events-none{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                </a>
+
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if p %}
+                        <a href="{{ url_for('main.scrap_section', section='nuevo', page=p) }}"
+                           class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-bold transition
+                                  {% if p == pagination.page %}bg-brandGreen text-white{% else %}border border-slate-700 text-slate-300 hover:bg-slate-800{% endif %}">
+                            {{ p }}
+                        </a>
+                    {% else %}
+                        <span class="w-9 h-9 flex items-center justify-center text-slate-600">…</span>
+                    {% endif %}
+                {% endfor %}
+
+                <a href="{{ url_for('main.scrap_section', section='nuevo', page=pagination.next_num) if pagination.has_next else '#' }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-full border border-slate-700 text-slate-400 hover:bg-slate-800 transition {% if not pagination.has_next %}opacity-30 pointer-events-none{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                </a>
+            </nav>
+        </div>
+        {% endif %}
+
     </div>
 </section>
 {% endblock %}
@@ -219,9 +252,9 @@
 {% block modals %}
 
 <!-- ===== MODAL NUEVO REGISTRO ===== -->
-<div id="registroModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div class="w-full max-w-4xl bg-[#02131c] border border-slate-700 rounded-[2rem] p-8 max-h-[90vh] overflow-y-auto">
-        <h2 class="text-xl font-bold text-white mb-6">Nuevo Registro de Scrap</h2>
+<div id="registroModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+    <div class="w-full max-w-4xl bg-[#02131c] border border-slate-700 rounded-2xl sm:rounded-[2rem] p-5 sm:p-8 max-h-[92vh] overflow-y-auto">
+        <h2 class="text-lg sm:text-xl font-bold text-white mb-6">Nuevo Registro de Scrap</h2>
         <form method="POST" action="{{ url_for('main.scrap_section', section='nuevo') }}" class="space-y-6">
             {% if current_user.rol.id in [1, 2] %}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700 mb-6">
@@ -239,7 +272,7 @@
                 </div>
             </div>
             {% endif %}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {% for label, name, options, attr in [
                     ('Máquina','id_maquina',maquinas,'nombre'),
                     ('Operador','id_operador',operadores,'nombre'),
@@ -250,11 +283,11 @@
                     ('Estatus','id_estatus_scrap',estatus_list,'descripcion_status'),
                     ('Tipo Acero','id_tipo_acero',tipos_acero,'especificacion'),
                     ('Tipo Laminación','id_tipo_laminacion',tipos_laminacion,'especificacion')
-                    
+
                 ] %}
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">{{ label }}</label>
-                    <select name="{{ name }}" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3">
+                    <select name="{{ name }}" id="new_{{ name }}" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3">
                         <option value="">Seleccionar...</option>
                         {% for item in options %}
                             <option value="{{ item[name] }}">{{ item[attr] }}</option>
@@ -265,11 +298,11 @@
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-800 pt-6">
                 <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">LOTE</label><input type="text" name="lote" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">PESO</label><input type="number" step="any" name="peso" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">RETRABAJO</label><input type="number" step="any" name="cantidad_retrabajado" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">CANTIDAD NG</label><input type="number" step="any" name="cantidad_ng" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">PESO (kg)</label><input type="number" step="0.01" min="0" name="peso" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">RETRABAJO (kg)</label><input type="number" step="0.01" min="0" name="cantidad_retrabajado" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">CANTIDAD NG (kg)</label><input type="number" step="0.01" min="0" name="cantidad_ng" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
             </div>
-            <div class="flex justify-end gap-3 pt-4">
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
                 <button type="button" onclick="document.getElementById('registroModal').classList.add('hidden')" class="px-6 py-3 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Cancelar</button>
                 <button type="submit" class="bg-brandGreen px-8 py-3 rounded-full font-bold text-white hover:bg-[#175b2f] transition">Guardar Registro</button>
             </div>
@@ -278,11 +311,11 @@
 </div>
 
 <!-- ===== MODAL EDITAR REGISTRO ===== -->
-<div id="editarModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div class="w-full max-w-4xl bg-[#02131c] border border-slate-700 rounded-[2rem] p-8 max-h-[90vh] overflow-y-auto">
-        <h2 class="text-xl font-bold text-white mb-6">Editar Registro de Scrap</h2>
+<div id="editarModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+    <div class="w-full max-w-4xl bg-[#02131c] border border-slate-700 rounded-2xl sm:rounded-[2rem] p-5 sm:p-8 max-h-[92vh] overflow-y-auto">
+        <h2 class="text-lg sm:text-xl font-bold text-white mb-6">Editar Registro de Scrap</h2>
         <form id="editarForm" method="POST" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Máquina</label>
                     <select name="id_maquina" id="e_maquina" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3">
@@ -368,11 +401,11 @@
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-800 pt-6">
                 <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">LOTE</label><input type="text" name="lote" id="e_lote" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">PESO</label><input type="number" step="any" name="peso" id="e_peso" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">RETRABAJO</label><input type="number" step="any" name="cantidad_retrabajado" id="e_retrabajo" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">CANTIDAD NG</label><input type="number" step="any" name="cantidad_ng" id="e_ng" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">PESO (kg)</label><input type="number" step="0.01" min="0" name="peso" id="e_peso" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">RETRABAJO (kg)</label><input type="number" step="0.01" min="0" name="cantidad_retrabajado" id="e_retrabajo" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">CANTIDAD NG (kg)</label><input type="number" step="0.01" min="0" name="cantidad_ng" id="e_ng" required class="w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3"></div>
             </div>
-            <div class="flex justify-end gap-3 pt-4">
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
                 <button type="button" onclick="document.getElementById('editarModal').classList.add('hidden')" class="px-6 py-3 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800 transition">Cancelar</button>
                 <button type="submit" class="bg-amber-500 px-8 py-3 rounded-full font-bold text-white hover:bg-amber-600 transition">Guardar Cambios</button>
             </div>
@@ -382,7 +415,7 @@
 
 <!-- ===== MODAL CONFIRMAR ELIMINAR ===== -->
 <div id="eliminarModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div class="w-full max-w-sm bg-[#02131c] border border-red-900/50 rounded-[2rem] p-8 text-center">
+    <div class="w-full max-w-sm bg-[#02131c] border border-red-900/50 rounded-2xl sm:rounded-[2rem] p-6 sm:p-8 text-center">
         <div class="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
         </div>
@@ -425,11 +458,11 @@ function selectRow(i) {
     document.getElementById('dTurno').textContent     = row.dataset.turno;
     document.getElementById('dDefecto').textContent   = row.dataset.defecto;
     document.getElementById('dEstatus').textContent   = row.dataset.estatus;
-    document.getElementById('dPeso').textContent      = parseFloat(row.dataset.peso).toFixed(1);
-    document.getElementById('dRetrabajo').textContent = row.dataset.retrabajo;
-    document.getElementById('dNg').textContent        = row.dataset.ng;
+    document.getElementById('dPeso').textContent      = parseFloat(row.dataset.peso).toFixed(2);
+    document.getElementById('dRetrabajo').textContent = parseFloat(row.dataset.retrabajo).toFixed(2);
+    document.getElementById('dNg').textContent        = parseFloat(row.dataset.ng).toFixed(2);
     document.getElementById('dTipoLaminacion').textContent = row.dataset.tipoLaminacion;
-     document.getElementById('dTipoAcero').textContent = row.dataset.tipoAcero;
+    document.getElementById('dTipoAcero').textContent = row.dataset.tipoAcero;
 
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('detailBody').classList.remove('hidden');
@@ -457,9 +490,9 @@ if (eHoraInput) {
     eHoraInput.addEventListener('change', function () {
         fetch(`/scrap/get-turno?hora=${this.value}`)
             .then(r => r.json())
-            .then(d => { 
+            .then(d => {
                 // Asumiendo que añades un input con id="e_turno" en el editarModal
-                document.getElementById('e_turno').value = d.nombre || 'Fuera de rango'; 
+                document.getElementById('e_turno').value = d.nombre || 'Fuera de rango';
             });
     });
 }
@@ -482,8 +515,8 @@ function abrirEditar(i) {
     setSelect('e_clasificacion',row.dataset.idClasificacion);
     setSelect('e_cliente',      row.dataset.idCliente);
     setSelect('e_estatus',      row.dataset.idEstatus);
-    setSelect('e_laminacion',   row.dataset.idTipoLaminacion);
-     setSelect('e_acero',   row.dataset.idTipoacero);
+    setSelect('e_laminacion',   row.dataset.idLaminacion);
+    setSelect('e_acero',        row.dataset.idAcero);
 
     // Pre-llenar inputs
     document.getElementById('e_lote').value      = row.dataset.lote;
@@ -498,6 +531,7 @@ function setSelect(id, value) {
     const el = document.getElementById(id);
     if (!el || !value) return;
     el.value = value;
+    syncSearchable(id);
 }
 
 // ---- MODAL ELIMINAR ----
@@ -531,6 +565,135 @@ document.addEventListener('keydown', function(e) {
         ['registroModal','editarModal','eliminarModal'].forEach(id => {
             document.getElementById(id).classList.add('hidden');
         });
+    }
+});
+
+// ================================================================
+// ---- COMBOBOX CON BUSCADOR (para listas largas: Tipo Acero, Tipo Laminación) ----
+// Convierte un <select> con muchas opciones en un input de texto
+// con lista filtrable, sin cambiar el "name" que se envía al servidor.
+// ================================================================
+function makeSearchable(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'relative';
+    select.parentNode.insertBefore(wrapper, select);
+
+    // El select original permanece en el DOM (con su "name" y su valor),
+    // solo se oculta visualmente para no perder la lógica del formulario.
+    select.style.position = 'absolute';
+    select.style.opacity = '0';
+    select.style.height = '1px';
+    select.style.width = '1px';
+    select.style.pointerEvents = 'none';
+    select.tabIndex = -1;
+    select.removeAttribute('required'); // se valida manualmente al enviar
+    wrapper.appendChild(select);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.autocomplete = 'off';
+    input.placeholder = 'Buscar...';
+    input.className = 'w-full rounded-xl bg-slate-950 border border-slate-700 text-white p-3 cursor-pointer';
+    wrapper.appendChild(input);
+
+    const list = document.createElement('ul');
+    list.className = 'hidden absolute z-50 mt-1 w-full max-h-60 overflow-y-auto bg-slate-950 border border-slate-700 rounded-xl shadow-2xl';
+    wrapper.appendChild(list);
+
+    const options = Array.from(select.options)
+        .filter(o => o.value !== '')
+        .map(o => ({ value: o.value, label: o.textContent }));
+
+    function renderList(filter = '') {
+        const f = filter.trim().toLowerCase();
+        const filtered = f ? options.filter(o => o.label.toLowerCase().includes(f)) : options;
+        list.innerHTML = '';
+        if (filtered.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-2 text-slate-600 text-sm';
+            li.textContent = 'Sin resultados';
+            list.appendChild(li);
+            return;
+        }
+        // Limita el render a 300 filas visibles para mantener fluidez con listas de 600+
+        filtered.slice(0, 300).forEach(o => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-2 text-sm text-slate-200 hover:bg-brandGreen/20 cursor-pointer';
+            li.textContent = o.label;
+            li.onclick = () => {
+                select.value = o.value;
+                input.value = o.label;
+                input.classList.remove('border-red-500');
+                list.classList.add('hidden');
+            };
+            list.appendChild(li);
+        });
+    }
+
+    input.addEventListener('focus', () => {
+        renderList(input.value && select.value ? '' : input.value);
+        list.classList.remove('hidden');
+    });
+    input.addEventListener('input', () => {
+        select.value = '';
+        renderList(input.value);
+        list.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) list.classList.add('hidden');
+    });
+
+    // Referencias cruzadas para validar y para sincronizar el texto visible
+    // cuando el select se pre-llena por código (ej. abrirEditar -> setSelect)
+    select._searchInput = input;
+    const form = select.closest('form');
+    if (form) {
+        form._searchables = form._searchables || [];
+        form._searchables.push({ select, input });
+    }
+}
+
+// Sincroniza el texto visible del buscador con el valor actual del select
+// (usado tras hacer select.value = X por código, ej. al abrir el modal Editar)
+function syncSearchable(id) {
+    const el = document.getElementById(id);
+    if (!el || !el._searchInput) return;
+    const opt = el.options[el.selectedIndex];
+    el._searchInput.value = opt && opt.value ? opt.textContent : '';
+}
+
+// Inicializar buscador en Tipo Acero / Tipo Laminación de ambos modales
+['new_id_tipo_acero', 'new_id_tipo_laminacion', 'e_acero', 'e_laminacion'].forEach(makeSearchable);
+
+// Validación manual antes de enviar (los selects ocultos ya no tienen "required" nativo)
+function validarSearchables(form) {
+    let valido = true;
+    (form._searchables || []).forEach(({ select, input }) => {
+        if (!select.value) {
+            input.classList.add('border-red-500');
+            valido = false;
+        } else {
+            input.classList.remove('border-red-500');
+        }
+    });
+    return valido;
+}
+
+document.querySelector('#registroModal form').addEventListener('submit', function (e) {
+    if (!validarSearchables(this)) {
+        e.preventDefault();
+        alert('Por favor completa Tipo Acero y Tipo Laminación.');
+    }
+});
+
+document.getElementById('editarForm').addEventListener('submit', function (e) {
+    if (!validarSearchables(this)) {
+        e.preventDefault();
+        alert('Por favor completa Tipo Acero y Tipo Laminación.');
     }
 });
 </script>

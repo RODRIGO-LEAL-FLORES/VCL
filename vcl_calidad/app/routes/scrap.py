@@ -119,8 +119,8 @@ def scrap_section(section):
                     numero_parte=request.form.get('numero_parte', '').strip(),
                     lote=request.form.get('lote', '').strip(),
                     peso=float(request.form.get('peso', 0)),
-                    cantidad_retrabajado=int(request.form.get('cantidad_retrabajado', 0)),
-                    cantidad_ng=int(request.form.get('cantidad_ng', 0)),
+                    cantidad_retrabajado=float(request.form.get('cantidad_retrabajado', 0)),
+                    cantidad_ng=float(request.form.get('cantidad_ng', 0)),
                     usuario_registro_id=current_user.id,
                     fecha_registro=fecha_final
                 )
@@ -133,9 +133,15 @@ def scrap_section(section):
             
             return redirect(url_for('main.scrap_section', section='nuevo'))
 
-        # GET: Renderizar formulario con datos para selectores
+       # GET: Renderizar formulario con datos para selectores
+        page = request.args.get('page', 1, type=int)
+        pagination = Scrap.query.order_by(Scrap.id.desc()).paginate(
+            page=page, per_page=20, error_out=False
+        )
+
         return render_template('scrap/generar_registro.html',
-            registros=Scrap.query.order_by(Scrap.id.desc()).limit(20).all(),
+            registros=pagination.items,
+            pagination=pagination,
             maquinas=Maquina.query.all(),
             operadores=Operador.query.all(),
             defectos=DefectoScrap.query.all(),
@@ -145,12 +151,12 @@ def scrap_section(section):
             estatus_list=EstatusScrap.query.all(),
             tipos_acero=TipoAcero.query.all(),
             tipos_laminacion=TipoLaminacion.query.all()
-            
-            
+        )
+                    
             
         
             
-        )
+        
 
     # --- LÓGICA PARA CATÁLOGOS ---
     mapping = {
@@ -323,8 +329,10 @@ def scrap_editar(item_id):
         registro.id_tipo_acero     = request.form.get('id_tipo_acero')
         registro.lote              = request.form.get('lote', '').strip()
         registro.peso              = float(request.form.get('peso', 0))
-        registro.cantidad_retrabajado = int(request.form.get('cantidad_retrabajado', 0))
-        registro.cantidad_ng       = int(request.form.get('cantidad_ng', 0))
+
+        
+        registro.cantidad_retrabajado = float(request.form.get('cantidad_retrabajado', 0))
+        registro.cantidad_ng = float(request.form.get('cantidad_ng', 0))
         registro.id_tipo_laminacion = request.form.get('id_tipo_laminacion')
 
         db.session.commit()
@@ -539,15 +547,15 @@ def line(data_dia, w_mm=257, h_mm=58):
     ax1.fill_between(xs,pesos,alpha=.1,color='#d97706')
     ax2.fill_between(xs,ngs,alpha=.07,color='#dc2626')
     l1,=ax1.plot(xs,pesos,color='#d97706',lw=2,marker='o',ms=3.5,markerfacecolor='white',markeredgewidth=1.5,markeredgecolor='#d97706',label='Peso (kg)',zorder=4)
-    l2,=ax2.plot(xs,ngs,color='#dc2626',lw=2,marker='s',ms=3.5,markerfacecolor='white',markeredgewidth=1.5,markeredgecolor='#dc2626',label='Piezas NG',zorder=4)
+    l2,=ax2.plot(xs,ngs,color='#dc2626',lw=2,marker='s',ms=3.5,markerfacecolor='white',markeredgewidth=1.5,markeredgecolor='#dc2626',label='Peso NG',zorder=4)
     ax1.set_xticks(xs); ax1.set_xticklabels(fechas,fontsize=5.8,color='#64748b',rotation=30 if len(fechas)>10 else 0,ha='right')
-    ax1.set_ylabel('Peso (kg)',fontsize=6,color='#d97706'); ax2.set_ylabel('Piezas NG',fontsize=6,color='#dc2626')
+    ax1.set_ylabel('Peso (kg)',fontsize=6,color='#d97706'); ax2.set_ylabel('Peso NG',fontsize=6,color='#dc2626')
     ax1.tick_params(axis='y',labelsize=5.5,colors='#94a3b8'); ax2.tick_params(axis='y',labelsize=5.5,colors='#94a3b8')
     ax1.yaxis.grid(True,color='#e2e8f0',lw=.4,zorder=0); ax1.set_axisbelow(True)
     for ax in [ax1,ax2]: ax.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False); ax2.spines['left'].set_visible(False)
     ax1.spines['left'].set_color('#e2e8f0'); ax1.spines['bottom'].set_color('#e2e8f0')
-    fig.legend([l1,l2],['Peso (kg)','Piezas NG'],loc='upper right',fontsize=6,frameon=True,fancybox=False,edgecolor='#e2e8f0',bbox_to_anchor=(.99,.97))
+    fig.legend([l1,l2],['Peso (kg)','Peso NG'],loc='upper right',fontsize=6,frameon=True,fancybox=False,edgecolor='#e2e8f0',bbox_to_anchor=(.99,.97))
     ax1.set_title('Tendencia diaria',fontsize=7.5,fontweight='bold',color='#0f172a',loc='left',pad=6)
     plt.tight_layout(pad=.5)
     return _save(fig)
@@ -636,7 +644,7 @@ def scrap_reporte_pdf():
     story.append(Paragraph(f"Generado: {fecha_gen}",s_s))
     story.append(HRFlowable(width='100%',thickness=1.2,color=colors.HexColor('#16a34a'),spaceAfter=6))
 
-    kd=[['REGISTROS','PESO (kg)','PIEZAS NG','RETRABAJO','PROM / REG'],
+    kd=[['REGISTROS','PESO (kg)','PESO NG','RETRABAJO','PROM / REG'],
         [str(n_regs),f'{total_peso:,.1f}',str(total_ng),str(total_ret),
          f'{total_peso/n_regs:,.1f}' if n_regs else '—']]
     kt=Table(kd,colWidths=[WM/5*mm]*5)

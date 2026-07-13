@@ -80,6 +80,27 @@
                                     <td class="px-6 py-4 text-slate-200">{{ item.fecha_compromiso if item.fecha_compromiso else '—' }}</td>
                                     <td class="px-6 py-4">
                                         <div class="flex flex-wrap gap-3">
+                                            <button type="button"
+                                                onclick="openTicketModal(this)"
+                                                data-folio="{{ item.id_folio_ticket }}"
+                                                data-color="{{ item.color_ticket.color_ticket if item.color_ticket else 'N/A' }}"
+                                                data-area="{{ item.area_responsable.area if item.area_responsable else 'N/A' }}"
+                                                data-emisor="{{ item.emisor or 'N/A' }}"
+                                                data-estatus="{{ item.estatus.status_descripcion if item.estatus else 'N/A' }}"
+                                                data-fecha-emicion="{{ item.fecha_emicion if item.fecha_emicion else '—' }}"
+                                                data-fecha-compromiso="{{ item.fecha_compromiso if item.fecha_compromiso else '—' }}"
+                                                data-fecha-cierre="{{ item.fecha_cierre if item.fecha_cierre else '—' }}"
+                                                data-dias-retrazo="{{ item.dias_retrazo if item.dias_retrazo is not none else 0 }}"
+                                                data-problematica="{{ item.problematica or 'Sin descripción registrada.' }}"
+                                                data-accion-correctiva="{{ item.accion_correctiva or 'Sin acciones correctivas registradas.' }}"
+                                                data-evidencia="{{ item.evidencia_resolucion or 'Sin evidencia registrada.' }}"
+                                                class="inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-700 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-600 transition">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                Ver
+                                            </button>
                                             <a href="{{ url_for('main.ticket_detail', item_id=item.id_folio_ticket) }}" class="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Editar</a>
                                             <form method="POST" action="{{ url_for('main.tickets_eliminar', item_id=item.id_folio_ticket) }}" class="inline">
                                                 <button type="submit" onclick="return confirm('¿Eliminar este ticket?')" class="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 transition">Eliminar</button>
@@ -128,13 +149,120 @@
 {% endblock %}
 
 {% block modals %}
+
+<!-- ============================================================= -->
+<!-- MODAL: VER TICKET (solo lectura)                               -->
+<!-- ============================================================= -->
+<div id="viewTicketModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4">
+    <div class="w-full max-w-2xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6 sticky top-0 bg-[#02131c]/95 pb-4 border-b border-slate-800/60">
+            <h2 class="text-xl font-bold text-white">Ticket <span id="vt-folio" class="text-emerald-400">#—</span></h2>
+            <button type="button" onclick="document.getElementById('viewTicketModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        <div class="space-y-6">
+
+            <!-- Datos generales -->
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
+                    <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Color</p>
+                    <p id="vt-color" class="text-white font-semibold">—</p>
+                </div>
+                <div class="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
+                    <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Estatus</p>
+                    <p id="vt-estatus" class="text-white font-semibold">—</p>
+                </div>
+                <div class="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
+                    <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Área responsable</p>
+                    <p id="vt-area" class="text-white font-semibold">—</p>
+                </div>
+                <div class="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
+                    <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Emisor</p>
+                    <p id="vt-emisor" class="text-white font-semibold">—</p>
+                </div>
+            </div>
+
+            <!-- Fechas -->
+            <div>
+                <p class="text-[10px] font-black tracking-widest text-slate-500 uppercase border-b border-slate-800/50 pb-2 mb-3">Fechas</p>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Emisión</p>
+                        <p id="vt-fecha-emicion" class="text-slate-200 text-sm">—</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Compromiso</p>
+                        <p id="vt-fecha-compromiso" class="text-slate-200 text-sm">—</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Cierre</p>
+                        <p id="vt-fecha-cierre" class="text-slate-200 text-sm">—</p>
+                    </div>
+                </div>
+                <p class="mt-3 text-xs">
+                    <span class="text-slate-500 uppercase tracking-widest font-bold">Días de retraso:</span>
+                    <span id="vt-dias-retrazo" class="text-red-400 font-bold">0</span>
+                </p>
+            </div>
+
+            <!-- Problemática -->
+            <div>
+                <p class="text-[10px] font-black tracking-widest text-slate-500 uppercase border-b border-slate-800/50 pb-2 mb-3">Problemática</p>
+                <p id="vt-problematica" class="text-slate-300 text-sm whitespace-pre-line leading-relaxed">—</p>
+            </div>
+
+            <!-- Acción correctiva -->
+            <div>
+                <p class="text-[10px] font-black tracking-widest text-slate-500 uppercase border-b border-slate-800/50 pb-2 mb-3">Acción correctiva</p>
+                <p id="vt-accion-correctiva" class="text-slate-300 text-sm whitespace-pre-line leading-relaxed">—</p>
+            </div>
+
+            <!-- Evidencia -->
+            <div>
+                <p class="text-[10px] font-black tracking-widest text-slate-500 uppercase border-b border-slate-800/50 pb-2 mb-3">Evidencia de resolución</p>
+                <p id="vt-evidencia" class="text-slate-300 text-sm whitespace-pre-line leading-relaxed">—</p>
+            </div>
+
+        </div>
+
+        <div class="mt-8 flex justify-end gap-3 border-t border-slate-800/60 pt-6">
+            <button type="button" onclick="document.getElementById('viewTicketModal').classList.add('hidden')" class="rounded-full border border-slate-700 bg-slate-950/80 px-6 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition">Cerrar</button>
+            <a id="vt-editar-link" href="#" class="rounded-full bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition">Ir a editar</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openTicketModal(btn) {
+        document.getElementById('vt-folio').textContent            = '#' + btn.dataset.folio;
+        document.getElementById('vt-color').textContent             = btn.dataset.color;
+        document.getElementById('vt-estatus').textContent           = btn.dataset.estatus;
+        document.getElementById('vt-area').textContent              = btn.dataset.area;
+        document.getElementById('vt-emisor').textContent            = btn.dataset.emisor;
+        document.getElementById('vt-fecha-emicion').textContent     = btn.dataset.fechaEmicion;
+        document.getElementById('vt-fecha-compromiso').textContent  = btn.dataset.fechaCompromiso;
+        document.getElementById('vt-fecha-cierre').textContent      = btn.dataset.fechaCierre;
+        document.getElementById('vt-dias-retrazo').textContent      = btn.dataset.diasRetrazo;
+        document.getElementById('vt-problematica').textContent      = btn.dataset.problematica;
+        document.getElementById('vt-accion-correctiva').textContent = btn.dataset.accionCorrectiva;
+        document.getElementById('vt-evidencia').textContent         = btn.dataset.evidencia;
+
+        document.getElementById('vt-editar-link').href = "{{ url_for('main.ticket_detail', item_id=0) }}".replace('/0', '/' + btn.dataset.folio);
+
+        document.getElementById('viewTicketModal').classList.remove('hidden');
+    }
+</script>
+
+<!-- ============================================================= -->
+<!-- MODAL: NUEVO TICKET                                            -->
+<!-- ============================================================= -->
 <div id="createTicketModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4">
     <div class="w-full max-w-3xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6 sticky top-0 bg-[#02131c]/95 pb-4">
             <h2 class="text-xl font-bold text-white">Nuevo Ticket</h2>
             <button type="button" onclick="document.getElementById('createTicketModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
         </div>
-        
+
         <form method="POST" action="{{ url_for('main.tickets_create') }}" class="space-y-6">
             <!-- Fila 1: Fecha y Color -->
             <div class="grid gap-4 sm:grid-cols-2">
@@ -176,11 +304,7 @@
                 <textarea name="problematica" rows="4" required placeholder="Describe el problema..." class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20"></textarea>
             </div>
 
-            <!-- Fecha de cierre -->
-            <div>
-                <label class="block mb-2 text-sm font-medium text-slate-400">Fecha de cierre (opcional)</label>
-                <input type="date" name="fecha_cierre" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
-            </div>
+          
 
             <!-- Botones -->
             <div class="mt-6 flex justify-end gap-3 border-t border-slate-800/60 pt-6">
@@ -191,4 +315,3 @@
     </div>
 </div>
 {% endblock %}
-
