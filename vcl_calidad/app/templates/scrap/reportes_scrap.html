@@ -245,6 +245,7 @@
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left text-slate-300 text-sm" id="tablaReportes">
+                <!-- En la etiqueta table -->
                 <thead class="text-[9px] uppercase text-slate-500 border-b border-slate-800">
                     <tr>
                         {% for col in ['Fecha','Lote','Máquina','Operador','Supervisor','Cliente','Defecto','Clasificación','Estatus','Turno','Peso (kg)','Retrabajo','Piezas NG'] %}
@@ -262,7 +263,9 @@
                         <td class="px-4 py-3 text-slate-400 whitespace-nowrap font-mono text-xs">
                             {{ reg.fecha_registro.strftime('%d/%m/%Y %H:%M') if reg.fecha_registro else '—' }}
                         </td>
-                        <td class="px-4 py-3 font-mono text-brandGreen font-semibold">{{ reg.lote or '—' }}</td>
+                        <td class="px-4 py-3 font-mono text-brandGreen font-semibold max-w-[200px] break-all">
+                            {{ reg.lote or '—' }}
+                        </td>
                         <td class="px-4 py-3">{{ reg.maquina.nombre if reg.maquina else '—' }}</td>
                         <td class="px-4 py-3 text-slate-400">{{ reg.operador.nombre if reg.operador else '—' }}</td>
                         <td class="px-4 py-3 text-slate-400">{{ reg.supervisor.nombre if reg.supervisor else '—' }}</td>
