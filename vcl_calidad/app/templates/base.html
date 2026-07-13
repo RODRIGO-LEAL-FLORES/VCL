@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
@@ -22,6 +23,7 @@
         tailwind.config = { theme: { extend: { colors: { brandDark: '#03151e', brandGreen: '#1b6339' } } } }
     </script>
     {% block styles %}{% endblock %}
+
 </head>
 <body class="flex flex-col min-h-screen text-slate-200 antialiased font-sans bg-brandDark relative overflow-x-hidden">
 
@@ -240,7 +242,7 @@
         resetTimers();
     </script>
     {% endif %}
-
+    {% block scripts %}{% endblock %}
     {% block modals %}{% endblock %}
 </body>
 </html>

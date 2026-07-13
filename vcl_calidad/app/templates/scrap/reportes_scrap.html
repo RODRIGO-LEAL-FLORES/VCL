@@ -15,8 +15,7 @@
                class="inline-flex items-center gap-2 rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 hover:bg-slate-800 transition">
                 &lsaquo; Menú
             </a>
-          
-                        {# DESPUÉS (pegar en su lugar): #}
+
             <a href="{{ url_for('main.scrap_reporte_pdf', **filtros) }}"
             target="_blank"
             class="inline-flex items-center gap-2 rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-red-400 hover:bg-red-900/30 transition">
@@ -25,9 +24,6 @@
                 </svg>
                 Exportar PDF
             </a>
-
-
-
         </div>
     </div>
 
@@ -45,7 +41,7 @@
 
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 <!-- Rango de fechas -->
-                <div class="lg:col-span-2 grid grid-cols-2 gap-2">
+                <div class="col-span-2 lg:col-span-2 grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Desde</label>
                         <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio or '' }}"
@@ -61,7 +57,7 @@
                 <!-- Máquina -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Máquina</label>
-                    <select name="id_maquina"
+                    <select name="id_maquina" id="sel_maquina"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todas</option>
                         {% for m in maquinas %}
@@ -73,7 +69,7 @@
                 <!-- Operador -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Operador</label>
-                    <select name="id_operador"
+                    <select name="id_operador" id="sel_operador"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for o in operadores %}
@@ -85,7 +81,7 @@
                 <!-- Cliente -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Cliente</label>
-                    <select name="id_cliente"
+                    <select name="id_cliente" id="sel_cliente"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for c in clientes %}
@@ -97,7 +93,7 @@
                 <!-- Estatus -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Estatus</label>
-                    <select name="id_estatus_scrap"
+                    <select name="id_estatus_scrap" id="sel_estatus"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for e in estatus_list %}
@@ -108,11 +104,11 @@
             </div>
 
             <!-- Fila 2 filtros -->
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-3">
                 <!-- Defecto -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Defecto</label>
-                    <select name="id_defecto_scrap"
+                    <select name="id_defecto_scrap" id="sel_defecto"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for d in defectos %}
@@ -124,7 +120,7 @@
                 <!-- Turno -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Turno</label>
-                    <select name="id_turno"
+                    <select name="id_turno" id="sel_turno"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for t in turnos %}
@@ -136,7 +132,7 @@
                 <!-- Supervisor -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Supervisor</label>
-                    <select name="id_supervisor"
+                    <select name="id_supervisor" id="sel_supervisor"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for s in supervisores %}
@@ -148,7 +144,7 @@
                 <!-- Clasificación -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Clasificación</label>
-                    <select name="id_clasificacion"
+                    <select name="id_clasificacion" id="sel_clasificacion"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todas</option>
                         {% for cl in clasificaciones %}
@@ -160,7 +156,7 @@
                 <!-- Tipo Acero -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Tipo Acero</label>
-                    <select name="id_tipo_acero"
+                    <select name="id_tipo_acero" id="sel_acero"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for a in tipos_acero %}
@@ -172,7 +168,7 @@
                 <!-- Tipo Laminacion -->
                 <div>
                     <label class="block text-[9px] text-slate-500 uppercase tracking-widest mb-1.5">Tipo Laminacion</label>
-                    <select name="id_tipo_laminacion"
+                    <select name="id_tipo_laminacion" id="sel_laminacion"
                             class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition">
                         <option value="">Todos</option>
                         {% for a in tipos_laminacion %}
@@ -180,14 +176,14 @@
                         {% endfor %}
                     </select>
                 </div>
+            </div>
 
-                <!-- Botón aplicar -->
-                <div class="flex items-end">
-                    <button type="submit"
-                            class="w-full rounded-xl bg-brandGreen px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#175b2f] transition shadow-lg shadow-brandGreen/20">
-                        Aplicar filtros
-                    </button>
-                </div>
+            <!-- Botón aplicar -->
+            <div class="mt-4">
+                <button type="submit"
+                        class="w-full sm:w-auto rounded-xl bg-brandGreen px-8 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#175b2f] transition shadow-lg shadow-brandGreen/20">
+                    Aplicar filtros
+                </button>
             </div>
 
             <!-- Chips de filtros activos -->
@@ -233,11 +229,9 @@
         </div>
     </div>
 
-    
-
     <!-- ===== TABLA DETALLE ===== -->
     <div class="bg-[#020f14]/90 border border-slate-800/80 rounded-2xl overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/60">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-800/60">
             <div>
                 <p class="text-[9px] uppercase tracking-widest text-slate-500 mb-0.5">Detalle</p>
                 <h3 class="text-sm font-bold text-white">Registros filtrados <span class="text-slate-500 font-normal">({{ registros | length }})</span></h3>
@@ -245,7 +239,7 @@
             <div class="relative">
                 <input type="text" id="buscarTabla" placeholder="Buscar en tabla..."
                        oninput="filtrarTabla(this.value)"
-                       class="rounded-xl bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 pl-8 focus:border-brandGreen focus:outline-none w-48 transition">
+                       class="rounded-xl bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 pl-8 focus:border-brandGreen focus:outline-none w-full sm:w-48 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
             </div>
         </div>
@@ -302,49 +296,105 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
 <script>
-// ===== DATOS DESDE FLASK =====
-const dataTiempo = {{ graficas.por_dia | tojson }};
-const dataEstatus = {{ graficas.por_estatus | tojson }};
+// ================================================================
+// ---- COMBOBOX CON BUSCADOR (para todos los filtros, excepto fechas) ----
+// Convierte un <select> en un input de texto con lista filtrable,
+// sin cambiar el "name" que se envía al formulario GET.
+// ================================================================
+function makeSearchable(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
 
-// ===== GRÁFICA LÍNEA: SCRAP EN EL TIEMPO =====
-const ctxTiempo = document.getElementById('chartTiempo').getContext('2d');
-let metricaActual = 'peso';
-let chartTiempo;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'relative';
+    select.parentNode.insertBefore(wrapper, select);
 
-const coloresEstatus = [
-    '#22c55e','#ef4444','#f59e0b','#3b82f6','#a855f7','#ec4899','#14b8a6','#f97316'
-];
+    select.style.position = 'absolute';
+    select.style.opacity = '0';
+    select.style.height = '1px';
+    select.style.width = '1px';
+    select.style.pointerEvents = 'none';
+    select.tabIndex = -1;
+    wrapper.appendChild(select);
 
-¡
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.autocomplete = 'off';
+    input.placeholder = 'Buscar...';
+    input.className = 'w-full rounded-xl bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2.5 focus:border-brandGreen focus:outline-none transition cursor-pointer';
+    wrapper.appendChild(input);
 
-function toggleMetrica(m) {
-    metricaActual = m;
-    crearGraficaTiempo(m);
-    document.getElementById('btn-peso').className = m === 'peso'
-        ? 'px-3 py-1 rounded-full text-[10px] font-bold uppercase border border-amber-500/40 text-amber-400 bg-amber-500/10 transition'
-        : 'px-3 py-1 rounded-full text-[10px] font-bold uppercase border border-slate-700 text-slate-500 transition';
-    document.getElementById('btn-ng').className = m === 'ng'
-        ? 'px-3 py-1 rounded-full text-[10px] font-bold uppercase border border-red-500/40 text-red-400 bg-red-500/10 transition'
-        : 'px-3 py-1 rounded-full text-[10px] font-bold uppercase border border-slate-700 text-slate-500 transition';
+    const list = document.createElement('ul');
+    list.className = 'hidden absolute z-50 mt-1 w-full max-h-60 overflow-y-auto bg-slate-950 border border-slate-700 rounded-xl shadow-2xl';
+    wrapper.appendChild(list);
+
+    const etiquetaTodos = select.options[0] ? select.options[0].textContent : 'Todos';
+    const options = Array.from(select.options)
+        .filter(o => o.value !== '')
+        .map(o => ({ value: o.value, label: o.textContent }));
+
+    function renderList(filter = '') {
+        const f = filter.trim().toLowerCase();
+        const filtered = f ? options.filter(o => o.label.toLowerCase().includes(f)) : options;
+        list.innerHTML = '';
+
+        const liTodos = document.createElement('li');
+        liTodos.className = 'px-4 py-2 text-sm text-slate-400 hover:bg-brandGreen/20 cursor-pointer border-b border-slate-800';
+        liTodos.textContent = etiquetaTodos;
+        liTodos.onclick = () => {
+            select.value = '';
+            input.value = '';
+            list.classList.add('hidden');
+        };
+        list.appendChild(liTodos);
+
+        if (filtered.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-2 text-slate-600 text-sm';
+            li.textContent = 'Sin resultados';
+            list.appendChild(li);
+            return;
+        }
+        filtered.slice(0, 300).forEach(o => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-2 text-sm text-slate-200 hover:bg-brandGreen/20 cursor-pointer';
+            li.textContent = o.label;
+            li.onclick = () => {
+                select.value = o.value;
+                input.value = o.label;
+                list.classList.add('hidden');
+            };
+            list.appendChild(li);
+        });
+    }
+
+    input.addEventListener('focus', () => {
+        renderList('');
+        list.classList.remove('hidden');
+    });
+    input.addEventListener('input', () => {
+        select.value = '';
+        renderList(input.value);
+        list.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) list.classList.add('hidden');
+    });
+
+    // Si el filtro ya venía aplicado (recarga de página con ?id_x=), mostrar su texto
+    if (select.value) {
+        const opt = select.options[select.selectedIndex];
+        input.value = opt ? opt.textContent : '';
+    }
 }
 
-
-// Leyenda manual
-const leyenda = document.getElementById('leyendaEstatus');
-dataEstatus.forEach((d, i) => {
-    leyenda.innerHTML += `
-        <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2 min-w-0">
-                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${coloresEstatus[i % coloresEstatus.length]}"></span>
-                <span class="text-[10px] text-slate-400 truncate">${d.estatus}</span>
-            </div>
-            <span class="text-[10px] font-mono text-slate-300 flex-shrink-0">${d.ng}</span>
-        </div>`;
-});
+[
+    'sel_maquina', 'sel_operador', 'sel_cliente', 'sel_estatus',
+    'sel_defecto', 'sel_turno', 'sel_supervisor', 'sel_clasificacion',
+    'sel_acero', 'sel_laminacion'
+].forEach(makeSearchable);
 
 // ===== BUSCAR EN TABLA =====
 function filtrarTabla(q) {
@@ -371,14 +421,11 @@ function sortTabla(col) {
 
     rows.forEach(r => tbody.appendChild(r));
 
-    // Reset icons
     document.querySelectorAll('.sort-icon').forEach((el, i) => {
         el.textContent = i === col ? (dir ? '↑' : '↓') : '↕';
         el.style.color = i === col ? '#22c55e' : '#374151';
     });
 }
-
-
 
 // ===== LIMPIAR FILTROS =====
 function limpiarFiltros() {
