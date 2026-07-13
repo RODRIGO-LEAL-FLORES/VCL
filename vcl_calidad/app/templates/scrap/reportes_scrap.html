@@ -272,7 +272,7 @@
                         <td class="px-4 py-3">{{ reg.cliente.nombre if reg.cliente else '—' }}</td>
                         <td class="px-4 py-3 text-slate-400">{{ reg.defecto.defecto if reg.defecto else '—' }}</td>
                         <td class="px-4 py-3 text-slate-500 text-xs">{{ reg.clasificacion.clasificacion if reg.clasificacion else '—' }}</td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-3 font-mono text-brandGreen font-semibold max-w-[200px] break-all">
                             {% set desc = reg.estatus.descripcion_status | lower if reg.estatus else '' %}
                             {% if 'rechaz' in desc %}
                                 <span class="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-semibold whitespace-nowrap">{{ reg.estatus.descripcion_status }}</span>
