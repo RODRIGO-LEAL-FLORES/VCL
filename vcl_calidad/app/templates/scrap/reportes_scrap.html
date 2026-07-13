@@ -266,10 +266,13 @@
                         <td class="px-4 py-3 font-mono text-brandGreen font-semibold max-w-[200px] break-all">
                             {{ reg.lote or '—' }}
                         </td>
-                        <td class="px-4 py-3">{{ reg.maquina.nombre if reg.maquina else '—' }}</td>
+                        <td class="px-4 py-3 font-mono text-brandGreen font-semibold max-w-[200px] break-all">
+                            {{ reg.maquina.nombre if reg.maquina else '—' }}</td>
                         <td class="px-4 py-3 text-slate-400">{{ reg.operador.nombre if reg.operador else '—' }}</td>
                         <td class="px-4 py-3 text-slate-400">{{ reg.supervisor.nombre if reg.supervisor else '—' }}</td>
-                        <td class="px-4 py-3">{{ reg.cliente.nombre if reg.cliente else '—' }}</td>
+                        <td class="px-4 py-3 font-mono text-brandGreen font-semibold max-w-[200px] break-all">
+                            {{ reg.cliente.nombre if reg.cliente else '—' }}
+                        </td>
                         <td class="px-4 py-3 text-slate-400">{{ reg.defecto.defecto if reg.defecto else '—' }}</td>
                         <td class="px-4 py-3 text-slate-500 text-xs">{{ reg.clasificacion.clasificacion if reg.clasificacion else '—' }}</td>
                         <td class="px-4 py-3 font-mono text-brandGreen font-semibold max-w-[200px] break-all">
