@@ -1,11 +1,12 @@
-from flask import render_template, request, redirect, url_for, session, flash,make_response
+from functools import wraps
+from flask import render_template, request, redirect, url_for, session, flash, make_response
 from datetime import datetime, date
 from app import db
 
 # Importaciones de los modelos del módulo de Scrap y generales
 from app.models.scrap_models import (
-    Scrap, Maquina, Operador, Turno, DefectoScrap, 
-    ClasificacionScrap, Supervisor, TipoAcero, EstatusScrap,TipoLaminacion
+    Scrap, Maquina, Operador, Turno, DefectoScrap,
+    ClasificacionScrap, Supervisor, TipoAcero, EstatusScrap, TipoLaminacion
 )
 from app.models.cliente import Cliente  # Modelo de Cliente corregido en singular
 from app.routes.main import main_bp
@@ -22,7 +23,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     SimpleDocTemplate, Table, TableStyle, Paragraph,
-    Spacer, HRFlowable,Image, PageBreak,
+    Spacer, HRFlowable, Image, PageBreak,
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
@@ -36,8 +37,22 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 
-
-
+# =========================================================================
+# DECORADOR DE SEGURIDAD: RESTRINGE SECCIONES A ROLES ADMINISTRATIVOS
+# =========================================================================
+def requiere_rol_admin(f):
+    """
+    Bloquea el acceso a nivel de servidor (no solo de UI) para roles
+    distintos de 1 y 2. Se debe colocar SIEMPRE por debajo de
+    @login_required, ya que necesita current_user ya autenticado.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.rol.id not in [1, 2]:
+            flash("No tienes permisos para acceder a esta sección.")
+            return redirect(url_for('main.scrap_reportes'))
+        return f(*args, **kwargs)
+    return decorated
 
 
 def detectar_turno(hora_obj):
@@ -63,8 +78,7 @@ def scrap():
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
-    
-        
+
     return render_template('scrap/scrap.html')
 
 
@@ -74,6 +88,7 @@ def scrap():
 # =========================================================================
 @main_bp.route('/scrap/<section>', methods=['GET', 'POST'])
 @login_required
+@requiere_rol_admin
 def scrap_section(section):
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización para acceder a este módulo.")
@@ -104,10 +119,10 @@ def scrap_section(section):
                 nuevo_registro = Scrap(
                     id_maquina=request.form.get('id_maquina'),
                     id_operador=request.form.get('id_operador'),
-                   
+
 
                     # DESPUÉS:
-                    
+
                     id_turno=turno_det.id_turno if turno_det else None,
                     id_defecto_scrap=request.form.get('id_defecto_scrap'),
                     id_tipo_laminacion=request.form.get('id_tipo_laminacion'),
@@ -130,7 +145,7 @@ def scrap_section(section):
             except Exception as e:
                 db.session.rollback()
                 flash(f'Error al guardar: {e}')
-            
+
             return redirect(url_for('main.scrap_section', section='nuevo'))
 
        # GET: Renderizar formulario con datos para selectores
@@ -152,11 +167,9 @@ def scrap_section(section):
             tipos_acero=TipoAcero.query.all(),
             tipos_laminacion=TipoLaminacion.query.all()
         )
-                    
-            
-        
-            
-        
+
+
+
 
     # --- LÓGICA PARA CATÁLOGOS ---
     mapping = {
@@ -170,19 +183,19 @@ def scrap_section(section):
         'tipos_acero': (TipoAcero, 'scrap/tipos_acero.html', 'especificacion'),
         'tipos_laminacion': (TipoLaminacion, 'scrap/tipos_laminacion.html', 'especificacion'),
         'estatus': (EstatusScrap, 'scrap/estatus.html', 'descripcion_status')
-        
-        
+
+
     }
-    
+
     if section in mapping:
         model, template, field = mapping[section]
-        return render_template(template, 
-                               items=model.query.order_by(field).all(), 
+        return render_template(template,
+                               items=model.query.order_by(field).all(),
                                edit_item=model.query.get(edit_id) if edit_id else None)
 
     return redirect(url_for('main.scrap_section', section='nuevo'))
 
-  
+
 
 
 # =========================================================================
@@ -192,6 +205,7 @@ def scrap_section(section):
 @main_bp.route('/scrap/action/<section>/<action_type>', methods=['POST'])
 @main_bp.route('/scrap/action/<section>/<action_type>/<int:item_id>', methods=['POST'])
 @login_required
+@requiere_rol_admin
 def scrap_actions(section, action_type, item_id=None):
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización para acceder a este módulo.")
@@ -212,7 +226,7 @@ def scrap_actions(section, action_type, item_id=None):
 
     if section in model_mapping:
         model, field_name, pk_name = model_mapping[section]
-        
+
         # ===== PROTECCIÓN: ESTATUS NO SE PUEDE CREAR NI EDITAR =====
         """""
         if section == 'estatus':
@@ -220,7 +234,7 @@ def scrap_actions(section, action_type, item_id=None):
                 flash('Los estatus están predefinidos y no pueden ser modificados.')
                 return redirect(url_for('main.scrap_section', section=section))
         """""
-        
+
         # OPERACIÓN: CREAR O EDITAR
         if action_type in ['crear', 'editar']:
             value = request.form.get(field_name, '').strip()
@@ -240,14 +254,14 @@ def scrap_actions(section, action_type, item_id=None):
                     db.session.add(new_obj)
                     db.session.commit()
                     flash('Registro creado con éxito.')
-            
+
             elif action_type == 'editar' and item_id:
                 obj = model.query.get_or_404(item_id)
-                
+
                 # Validación inteligente de duplicados usando la PK correspondiente
                 pk_column = getattr(model, pk_name)
                 existing = model.query.filter(getattr(model, field_name) == value, pk_column != item_id).first()
-                
+
                 if existing:
                     flash('Ya existe otro registro con ese mismo nombre.')
                 else:
@@ -278,14 +292,14 @@ def scrap_actions(section, action_type, item_id=None):
                 flash('Turno guardado con éxito.')
             except ValueError:
                 flash('Error en el formato de hora suministrado.')
-                
+
         elif action_type == 'editar' and item_id:
             try:
                 obj = Turno.query.get_or_404(item_id)
                 obj.nombre_turno = request.form.get('nombre_turno').strip()
                 obj.hora_inicio = datetime.strptime(request.form.get('hora_inicio'), '%H:%M').time()
                 obj.hora_fin = datetime.strptime(request.form.get('hora_fin'), '%H:%M').time()
-                
+
                 db.session.commit()
                 flash('Turno actualizado con éxito.')
             except ValueError:
@@ -311,6 +325,7 @@ def historial_usuario(user_id):
 
 @main_bp.route('/scrap/action/nuevo/editar/<int:item_id>', methods=['POST'])
 @login_required
+@requiere_rol_admin
 def scrap_editar(item_id):
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización.")
@@ -330,10 +345,37 @@ def scrap_editar(item_id):
         registro.lote              = request.form.get('lote', '').strip()
         registro.peso              = float(request.form.get('peso', 0))
 
-        
+
         registro.cantidad_retrabajado = float(request.form.get('cantidad_retrabajado', 0))
         registro.cantidad_ng = float(request.form.get('cantidad_ng', 0))
         registro.id_tipo_laminacion = request.form.get('id_tipo_laminacion')
+
+        # --- FECHA / HORA / TURNO (recalcular igual que en 'nuevo') ---
+        hora_manual  = request.form.get('hora_registro')
+        fecha_manual = request.form.get('fecha_registro')
+
+        if hora_manual:
+            hora_dt   = datetime.strptime(hora_manual, '%H:%M').time()
+            turno_det = detectar_turno(hora_dt)
+
+            if fecha_manual:
+                fecha_final = datetime.strptime(f"{fecha_manual} {hora_manual}", '%Y-%m-%d %H:%M')
+            else:
+                # Sin fecha nueva: conserva la fecha existente, solo cambia la hora
+                base_fecha = registro.fecha_registro.date() if registro.fecha_registro else date.today()
+                fecha_final = datetime.combine(base_fecha, hora_dt)
+
+            registro.fecha_registro = fecha_final
+            registro.id_turno       = turno_det.id_turno if turno_det else None
+
+        elif fecha_manual:
+            # Solo cambió la fecha: conserva la hora existente y recalcula turno con ella
+            hora_existente = registro.fecha_registro.time() if registro.fecha_registro else datetime.now().time()
+            registro.fecha_registro = datetime.strptime(
+                f"{fecha_manual} {hora_existente.strftime('%H:%M')}", '%Y-%m-%d %H:%M'
+            )
+            turno_det = detectar_turno(hora_existente)
+            registro.id_turno = turno_det.id_turno if turno_det else None
 
         db.session.commit()
         flash('Registro actualizado correctamente.')
@@ -346,6 +388,7 @@ def scrap_editar(item_id):
 
 @main_bp.route('/scrap/action/nuevo/eliminar/<int:item_id>', methods=['POST'])
 @login_required
+@requiere_rol_admin
 def scrap_eliminar(item_id):
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización.")
@@ -389,7 +432,7 @@ def get_turno():
 @main_bp.route('/scrap/reportes', methods=['GET'])
 @login_required
 def scrap_reportes():
-    
+
     if not current_user.puede_ver_scrap:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
@@ -459,7 +502,7 @@ def scrap_reportes():
         'total_retrabajo': total_retrabajo,
     }
 
-    
+
     # =============================================
     # 5. CATÁLOGOS PARA LOS SELECTORES DE FILTRO
     # =============================================
@@ -468,7 +511,7 @@ def scrap_reportes():
         filtros=filtros,
         registros=registros,
         kpis=kpis,
-    
+
         # Catálogos para los <select>
         maquinas=Maquina.query.order_by(Maquina.nombre).all(),
         operadores=Operador.query.order_by(Operador.nombre).all(),
@@ -481,9 +524,8 @@ def scrap_reportes():
         tipos_acero=TipoAcero.query.order_by(TipoAcero.especificacion).all(),
         tipos_laminacion=TipoLaminacion.query.order_by(TipoLaminacion.especificacion).all(),
     )
-    
-    
-    
+
+
 
 
 SCHEMES = {
@@ -639,15 +681,15 @@ def scrap_reporte_pdf():
     doc=SimpleDocTemplate(buf_pdf,pagesize=PAGE,leftMargin=M,rightMargin=M,topMargin=M,bottomMargin=13*mm)
     story=[]
 
-    # ══ PÁGINA 1: KPIs + Tendencia + Defectos/Máquinas ══════════════════════
-    story.append(Paragraph("Reporte de Scrap",s_t))
-    story.append(Paragraph(f"Generado: {fecha_gen}",s_s))
-    story.append(HRFlowable(width='100%',thickness=1.2,color=colors.HexColor('#16a34a'),spaceAfter=6))
+    # ══ PÁGINA 1: PORTADA + KPIs ═════════════════════════════════════════════
+    story.append(Paragraph("Reporte de Scrap", s_t))
+    story.append(Paragraph(f"Generado: {fecha_gen}", s_s))
+    story.append(HRFlowable(width='100%', thickness=1.2, color=colors.HexColor('#16a34a'), spaceAfter=6))
 
-    kd=[['REGISTROS','PESO (kg)','PESO NG','RETRABAJO','PROM / REG'],
-        [str(n_regs),f'{total_peso:,.1f}',str(total_ng),str(total_ret),
-         f'{total_peso/n_regs:,.1f}' if n_regs else '—']]
-    kt=Table(kd,colWidths=[WM/5*mm]*5)
+    kd = [['REGISTROS','PESO (kg)','PESO NG','RETRABAJO','PROM / REG'],
+          [str(n_regs), f'{total_peso:,.1f}', str(total_ng), str(total_ret),
+           f'{total_peso/n_regs:,.1f}' if n_regs else '—']]
+    kt = Table(kd, colWidths=[WM/5*mm]*5)
     kt.setStyle(TableStyle([
         ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#f1f5f9')),
         ('TEXTCOLOR',(0,0),(-1,0),colors.HexColor('#64748b')),
@@ -663,35 +705,32 @@ def scrap_reporte_pdf():
         ('INNERGRID',(0,0),(-1,-1),.3,colors.HexColor('#e2e8f0')),
         ('ROWBACKGROUNDS',(0,1),(-1,1),[colors.white]),
     ]))
-    story.append(kt); story.append(Spacer(1,4*mm))
+    story.append(kt)
 
-    story+=_sec('Tendencia diaria',s_h)
-    story.append(_img(line(data_dia,w_mm=WM,h_mm=56),WM,56))
-    story.append(Spacer(1,4*mm))
+    # ══ UNA GRÁFICA POR PÁGINA ═══════════════════════════════════════════════
+    H_FULL = 150  # altura generosa: ya no comparte espacio con otra gráfica en la misma hoja
 
-    story+=_sec('Defectos · Máquinas',s_h)
-    w2=(WM-4)/2; h2=H-8
-    story.append(_grid([(bar(data_def,'Top Defectos — Peso (kg)',scheme='green',w_mm=w2,h_mm=h2),w2,h2),
-                         (bar(data_maq,'Top Máquinas — Peso (kg)',scheme='amber',w_mm=w2,h_mm=h2),w2,h2)]))
+    graficas = [
+        ('Tendencia diaria',  lambda: line(data_dia, w_mm=WM, h_mm=120)),
+        ('Top Defectos',      lambda: bar(data_def, 'Top Defectos — Peso (kg)', scheme='green',  w_mm=WM, h_mm=H_FULL)),
+        ('Top Máquinas',      lambda: bar(data_maq, 'Top Máquinas — Peso (kg)', scheme='amber',  w_mm=WM, h_mm=H_FULL)),
+        ('Top Operadores',    lambda: bar(data_op,  'Top Operadores — Peso NG', scheme='red',    w_mm=WM, h_mm=H_FULL, unit='pzs')),
+        ('NG por Estatus',    lambda: bar(data_est, 'NG por Estatus',           scheme='purple', w_mm=WM, h_mm=H_FULL, unit='pzs', n=6)),
+        ('Por Turno',         lambda: bar(data_tur, 'Por Turno',                scheme='teal',   w_mm=WM, h_mm=H_FULL, n=4)),
+        ('Por Cliente',       lambda: bar(data_cli, 'Por Cliente',              scheme='blue',   w_mm=WM, h_mm=H_FULL)),
+        ('Por Supervisor',    lambda: bar(data_sup, 'Por Supervisor',           scheme='slate',  w_mm=WM, h_mm=H_FULL)),
+        ('Por Tipo de Acero', lambda: bar(data_ace, 'Por Tipo Acero',           scheme='orange', w_mm=WM, h_mm=H_FULL)),
+        ('Por Laminación',    lambda: bar(data_lam, 'Por Laminación',           scheme='lime',   w_mm=WM, h_mm=H_FULL, n=4)),
+        ('Por Clasificación', lambda: bar(data_cla, 'Por Clasificación',        scheme='red',    w_mm=WM, h_mm=H_FULL, n=4)),
+    ]
 
-    # ══ PÁGINA 2: Operadores/Estatus + Turno/Cliente/Supervisor + Acero/Lam/Clas ══
-    story.append(PageBreak())
-    story+=_sec('Operadores · Estatus',s_h)
-    story.append(_grid([(bar(data_op,'Top Operadores — Peso NG',scheme='red',w_mm=w2,h_mm=h2,unit='pzs'),w2,h2),
-                         (bar(data_est,'NG por Estatus',scheme='purple',w_mm=w2,h_mm=h2,unit='pzs',n=6),w2,h2)]))
-    story.append(Spacer(1,4*mm))
-
-    story+=_sec('Turnos · Clientes · Supervisores',s_h)
-    w3=(WM-8)/3; h3=H-10
-    story.append(_grid([(bar(data_tur,'Por Turno',scheme='teal',w_mm=w3,h_mm=h3,unit='kg',n=4),w3,h3),
-                         (bar(data_cli,'Por Cliente',scheme='blue',w_mm=w3,h_mm=h3,unit='kg'),w3,h3),
-                         (bar(data_sup,'Por Supervisor',scheme='slate',w_mm=w3,h_mm=h3,unit='kg'),w3,h3)]))
-    story.append(Spacer(1,4*mm))
-
-    story+=_sec('Tipo Acero · Laminación · Clasificación',s_h)
-    story.append(_grid([(bar(data_ace,'Por Tipo Acero',scheme='orange',w_mm=w3,h_mm=h3,unit='kg'),w3,h3),
-                         (bar(data_lam,'Por Laminación',scheme='lime',w_mm=w3,h_mm=h3,unit='kg',n=4),w3,h3),
-                         (bar(data_cla,'Por Clasificación',scheme='red',w_mm=w3,h_mm=h3,unit='kg',n=4),w3,h3)]))
+    for titulo, generador in graficas:
+        buf_chart = generador()
+        if buf_chart is None:
+            continue  # sin datos → se omite esa página en vez de dejarla en blanco
+        story.append(PageBreak())
+        story += _sec(titulo, s_h)
+        story.append(_img(buf_chart, WM, H_FULL))
 
     def footer(cv,doc):
         cv.saveState(); pw=doc.pagesize[0]
@@ -708,9 +747,132 @@ def scrap_reporte_pdf():
     resp.headers['Content-Type']='application/pdf'
     resp.headers['Content-Disposition']=f'attachment; filename="reporte_scrap_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf"'
     return resp
-    
-    
-    
+    if not current_user.puede_ver_scrap:
+        flash("No tienes autorización."); return redirect(url_for('main.home'))
 
+    # ── Filtros ───────────────────────────────────────────────────────────────
+    filtros = {k: request.args.get(k,'') for k in [
+        'fecha_inicio','fecha_fin','id_maquina','id_operador','id_cliente',
+        'id_estatus_scrap','id_defecto_scrap','id_turno','id_supervisor',
+        'id_clasificacion','id_tipo_acero','id_tipo_laminacion']}
 
+    q = Scrap.query
+    if filtros['fecha_inicio']: q=q.filter(Scrap.fecha_registro>=datetime.strptime(filtros['fecha_inicio'],'%Y-%m-%d'))
+    if filtros['fecha_fin']:    q=q.filter(Scrap.fecha_registro<=datetime.strptime(filtros['fecha_fin'],'%Y-%m-%d').replace(hour=23,minute=59,second=59))
+    for field in ['id_maquina','id_operador','id_cliente','id_estatus_scrap','id_defecto_scrap','id_turno','id_supervisor','id_clasificacion','id_tipo_acero','id_tipo_laminacion']:
+        if filtros[field]: q=q.filter(getattr(Scrap,field)==int(filtros[field]))
+    registros = q.order_by(Scrap.fecha_registro.asc()).all()
 
+    # ── KPIs ─────────────────────────────────────────────────────────────────
+    total_peso = sum(float(r.peso or 0) for r in registros)
+    total_ng   = sum(int(r.cantidad_ng or 0) for r in registros)
+    total_ret  = sum(int(r.cantidad_retrabajado or 0) for r in registros)
+    n_regs     = len(registros)
+
+    # ── Agregaciones ─────────────────────────────────────────────────────────
+    def agg(kfn, vfn=lambda r: float(r.peso or 0)):
+        m={}
+        for r in registros:
+            k=kfn(r)
+            if k: m[k]=m.get(k,0.0)+vfn(r)
+        return sorted(m.items(),key=lambda x:x[1],reverse=True)
+
+    ng_ = lambda r: int(r.cantidad_ng or 0)
+    data_def = agg(lambda r: r.defecto.defecto               if r.defecto        else None)
+    data_maq = agg(lambda r: r.maquina.nombre                if r.maquina        else None)
+    data_op  = agg(lambda r: r.operador.nombre               if r.operador       else None, ng_)
+    data_est = agg(lambda r: r.estatus.descripcion_status    if r.estatus        else None, ng_)
+    data_tur = agg(lambda r: r.turno.nombre_turno            if r.turno          else None)
+    data_cli = agg(lambda r: r.cliente.nombre                if r.cliente        else None)
+    data_sup = agg(lambda r: r.supervisor.nombre             if r.supervisor     else None)
+    data_ace = agg(lambda r: r.tipo_acero.especificacion     if r.tipo_acero     else None)
+    data_lam = agg(lambda r: r.tipo_laminacion.especificacion if r.tipo_laminacion else None)
+    data_cla = agg(lambda r: r.clasificacion.clasificacion   if r.clasificacion  else None)
+
+    dia_map={}
+    for r in registros:
+        if r.fecha_registro:
+            k=r.fecha_registro.strftime('%Y-%m-%d'); lbl=r.fecha_registro.strftime('%d/%m')
+            if k not in dia_map: dia_map[k]={'fecha':lbl,'peso':0.0,'ng':0}
+            dia_map[k]['peso']=round(dia_map[k]['peso']+float(r.peso or 0),2)
+            dia_map[k]['ng']+=int(r.cantidad_ng or 0)
+    data_dia=[v for _,v in sorted(dia_map.items())]
+
+    # ── Estilos ───────────────────────────────────────────────────────────────
+    fecha_gen=datetime.now().strftime('%d/%m/%Y %H:%M')
+    sty=getSampleStyleSheet()
+    s_t=ParagraphStyle('t',parent=sty['Title'],fontSize=18,textColor=colors.HexColor('#0f172a'),spaceAfter=1,leading=22)
+    s_s=ParagraphStyle('s',parent=sty['Normal'],fontSize=7,textColor=colors.HexColor('#64748b'),spaceAfter=5)
+    s_h=ParagraphStyle('h',parent=sty['Normal'],fontSize=7,textColor=colors.HexColor('#64748b'),fontName='Helvetica-Bold',spaceAfter=2)
+
+    PAGE=landscape(A4); M=12*mm; W=PAGE[0]-2*M; WM=W/mm; H=75
+    buf_pdf=BytesIO()
+    doc=SimpleDocTemplate(buf_pdf,pagesize=PAGE,leftMargin=M,rightMargin=M,topMargin=M,bottomMargin=13*mm)
+    story=[]
+
+    # ══ PÁGINA 1: PORTADA + KPIs ═════════════════════════════════════════════
+    story.append(Paragraph("Reporte de Scrap", s_t))
+    story.append(Paragraph(f"Generado: {fecha_gen}", s_s))
+    story.append(HRFlowable(width='100%', thickness=1.2, color=colors.HexColor('#16a34a'), spaceAfter=6))
+
+    kd = [['REGISTROS','PESO (kg)','PESO NG','RETRABAJO','PROM / REG'],
+          [str(n_regs), f'{total_peso:,.1f}', str(total_ng), str(total_ret),
+           f'{total_peso/n_regs:,.1f}' if n_regs else '—']]
+    kt = Table(kd, colWidths=[WM/5*mm]*5)
+    kt.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#f1f5f9')),
+        ('TEXTCOLOR',(0,0),(-1,0),colors.HexColor('#64748b')),
+        ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),('FONTSIZE',(0,0),(-1,0),6.5),
+        ('ALIGN',(0,0),(-1,0),'CENTER'),('TOPPADDING',(0,0),(-1,0),4),('BOTTOMPADDING',(0,0),(-1,0),4),
+        ('FONTNAME',(0,1),(-1,1),'Helvetica-Bold'),('FONTSIZE',(0,1),(-1,1),17),
+        ('ALIGN',(0,1),(-1,1),'CENTER'),('TOPPADDING',(0,1),(-1,1),7),('BOTTOMPADDING',(0,1),(-1,1),7),
+        ('TEXTCOLOR',(1,1),(1,1),colors.HexColor('#d97706')),
+        ('TEXTCOLOR',(2,1),(2,1),colors.HexColor('#dc2626')),
+        ('TEXTCOLOR',(3,1),(3,1),colors.HexColor('#2563eb')),
+        ('TEXTCOLOR',(4,1),(4,1),colors.HexColor('#64748b')),
+        ('BOX',(0,0),(-1,-1),.5,colors.HexColor('#e2e8f0')),
+        ('INNERGRID',(0,0),(-1,-1),.3,colors.HexColor('#e2e8f0')),
+        ('ROWBACKGROUNDS',(0,1),(-1,1),[colors.white]),
+    ]))
+    story.append(kt)
+
+    # ══ UNA GRÁFICA POR PÁGINA ═══════════════════════════════════════════════
+    H_FULL = 150  # altura generosa: ya no comparte espacio con otra gráfica en la misma hoja
+
+    graficas = [
+        ('Tendencia diaria',  lambda: line(data_dia, w_mm=WM, h_mm=120)),
+        ('Top Defectos',      lambda: bar(data_def, 'Top Defectos — Peso (kg)', scheme='green',  w_mm=WM, h_mm=H_FULL)),
+        ('Top Máquinas',      lambda: bar(data_maq, 'Top Máquinas — Peso (kg)', scheme='amber',  w_mm=WM, h_mm=H_FULL)),
+        ('Top Operadores',    lambda: bar(data_op,  'Top Operadores — Peso NG', scheme='red',    w_mm=WM, h_mm=H_FULL, unit='pzs')),
+        ('NG por Estatus',    lambda: bar(data_est, 'NG por Estatus',           scheme='purple', w_mm=WM, h_mm=H_FULL, unit='pzs', n=6)),
+        ('Por Turno',         lambda: bar(data_tur, 'Por Turno',                scheme='teal',   w_mm=WM, h_mm=H_FULL, n=4)),
+        ('Por Cliente',       lambda: bar(data_cli, 'Por Cliente',              scheme='blue',   w_mm=WM, h_mm=H_FULL)),
+        ('Por Supervisor',    lambda: bar(data_sup, 'Por Supervisor',           scheme='slate',  w_mm=WM, h_mm=H_FULL)),
+        ('Por Tipo de Acero', lambda: bar(data_ace, 'Por Tipo Acero',           scheme='orange', w_mm=WM, h_mm=H_FULL)),
+        ('Por Laminación',    lambda: bar(data_lam, 'Por Laminación',           scheme='lime',   w_mm=WM, h_mm=H_FULL, n=4)),
+        ('Por Clasificación', lambda: bar(data_cla, 'Por Clasificación',        scheme='red',    w_mm=WM, h_mm=H_FULL, n=4)),
+    ]
+
+    for titulo, generador in graficas:
+        buf_chart = generador()
+        if buf_chart is None:
+            continue  # sin datos → se omite esa página en vez de dejarla en blanco
+        story.append(PageBreak())
+        story += _sec(titulo, s_h)
+        story.append(_img(buf_chart, WM, H_FULL))
+
+    def footer(cv,doc):
+        cv.saveState(); pw=doc.pagesize[0]
+        cv.setStrokeColor(colors.HexColor('#e2e8f0')); cv.setLineWidth(.4)
+        cv.line(M,11*mm,pw-M,11*mm)
+        cv.setFont('Helvetica',6.5); cv.setFillColor(colors.HexColor('#64748b'))
+        cv.drawString(M,8*mm,"Reporte de Scrap")
+        cv.drawRightString(pw-M,8*mm,f"Pág. {doc.page}  ·  {fecha_gen}")
+        cv.restoreState()
+
+    doc.build(story,onFirstPage=footer,onLaterPages=footer)
+    buf_pdf.seek(0)
+    resp=make_response(buf_pdf.read())
+    resp.headers['Content-Type']='application/pdf'
+    resp.headers['Content-Disposition']=f'attachment; filename="reporte_scrap_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf"'
+    return resp

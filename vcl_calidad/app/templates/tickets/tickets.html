@@ -57,8 +57,34 @@
         </a>
 
        
+      
 
-        <!-- Colores -->
+
+
+
+       
+
+        <!-- Reportes de ticket --><!-- Reportes de ticket (todos) -->
+        <a href="{{ url_for('main.reportes_tickets') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-slate-800/80 shadow-xl shadow-slate-950/20 hover:border-emerald-500 transition-all text-left">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6h13v6M9 17H4v-6h5m0 6V5h6v12" />
+                    </svg>
+                </span>
+                <h2 class="text-xl font-bold text-white">Reportes de Ticket</h2>
+            </div>
+            <p class="text-slate-400 text-sm">Filtra por área, color, estatus y fechas, y exporta a Excel/CSV.</p>
+        </a>
+
+
+   
+        {% if current_user.rol.id in [1] %}
+       
+
+
+
+         <!-- Colores -->
         <a href="{{ url_for('main.tickets_section', section='colores') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-slate-800/80 shadow-xl shadow-slate-950/20 hover:border-emerald-500 transition-all">
             <div class="flex items-center gap-3 mb-3">
                 <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-400">
@@ -96,6 +122,10 @@
             </div>
             <p class="text-slate-400 text-sm">Configurar los estados de seguimiento disponibles para cada ticket.</p>
         </a>
+        {% endif %}
+
+        
+      
 
     </div>
 

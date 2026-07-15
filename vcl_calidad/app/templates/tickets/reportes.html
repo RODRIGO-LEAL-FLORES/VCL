@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Reportes de Tickets - VC Laminations{% endblock %}
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="border-b border-slate-800/60 pb-6 mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-black tracking-wide text-white uppercase">Reportes de Tickets</h1>
+            <p class="text-slate-400 font-medium text-sm mt-1">Filtra y exporta la información de tickets.</p>
+        </div>
+        <a href="{{ url_for('main.tickets') }}" class="text-sm font-semibold text-slate-300 hover:text-emerald-400 transition-colors">← Volver</a>
+    </div>
+
+    <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4 bg-[#020f14]/90 border border-slate-800/80 rounded-2xl p-4">
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Buscar folio..."
+               class="col-span-1 md:col-span-2 rounded-xl bg-slate-900/60 border border-slate-700 text-white text-sm px-3 py-2 focus:outline-none focus:border-emerald-500">
+
+        <select name="area" class="rounded-xl bg-slate-900/60 border border-slate-700 text-white text-sm px-3 py-2">
+            <option value="">Todas las áreas</option>
+            {% for a in areas %}
+            <option value="{{ a.id_area }}" {% if selected_area == a.id_area %}selected{% endif %}>{{ a.area }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="color" class="rounded-xl bg-slate-900/60 border border-slate-700 text-white text-sm px-3 py-2">
+            <option value="">Todos los colores</option>
+            {% for c in colores %}
+            <option value="{{ c.id_color }}" {% if selected_color == c.id_color %}selected{% endif %}>{{ c.color_ticket }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="estatus" class="rounded-xl bg-slate-900/60 border border-slate-700 text-white text-sm px-3 py-2">
+            <option value="">Todos los estatus</option>
+            {% for e in estatus_list %}
+            <option value="{{ e.id_estatus_ticket }}" {% if selected_estatus == e.id_estatus_ticket %}selected{% endif %}>{{ e.status_descripcion }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="flex gap-2">
+            <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="w-full rounded-xl bg-slate-900/60 border border-slate-700 text-white text-sm px-2 py-2">
+            <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="w-full rounded-xl bg-slate-900/60 border border-slate-700 text-white text-sm px-2 py-2">
+        </div>
+
+        <div class="col-span-1 md:col-span-6 flex justify-end gap-2 mt-2">
+            <a href="{{ url_for('main.reportes_tickets') }}" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:text-white">Limpiar</a>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 text-sm font-bold hover:bg-emerald-400 transition-colors">Filtrar</button>
+        </div>
+    </form>
+
+    <div class="flex justify-end mb-4">
+        <a href="{{ url_for('main.reportes_exportar', search=search_query, area=selected_area, color=selected_color, estatus=selected_estatus, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta) }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/20 border border-sky-500/50 text-sky-300 text-sm font-bold hover:bg-sky-500/30 transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Exportar CSV/Excel
+        </a>
+
+         <a href="{{ url_for('main.reportes_pdf', search=search_query, area=selected_area, color=selected_color, estatus=selected_estatus, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta) }}"
+   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/50 text-red-300 text-sm font-bold hover:bg-red-500/30 transition-colors">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    Descargar PDF
+</a>
+    </div>
+
+   
+
+    <div class="overflow-x-auto rounded-2xl border border-slate-800/80">
+        <table class="min-w-full text-sm text-left">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-xs">
+                <tr>
+                    <th class="px-4 py-3">Folio</th>
+                    <th class="px-4 py-3">Emisor</th>
+                    <th class="px-4 py-3">Área</th>
+                    <th class="px-4 py-3">Color</th>
+                    <th class="px-4 py-3">Estatus</th>
+                    <th class="px-4 py-3">Emisión</th>
+                    <th class="px-4 py-3">Compromiso</th>
+                    <th class="px-4 py-3">Cierre</th>
+                    <th class="px-4 py-3">Retraso</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+                {% for t in items %}
+                <tr class="hover:bg-slate-900/40">
+                    <td class="px-4 py-3 font-bold text-white">
+                        <a href="{{ url_for('main.ticket_detail', item_id=t.id_folio_ticket) }}" class="hover:text-emerald-400">#{{ t.id_folio_ticket }}</a>
+                    </td>
+                    <td class="px-4 py-3 text-slate-300">{{ t.emisor or '-' }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ area_map.get(t.id_area_responsable, '-') }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ color_map.get(t.id_color_ticket, '-') }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ estatus_map.get(t.id_estatus_ticket, '-') }}</td>
+                    <td class="px-4 py-3 text-slate-400">{{ t.fecha_emicion or '-' }}</td>
+                    <td class="px-4 py-3 text-slate-400">{{ t.fecha_compromiso or '-' }}</td>
+                    <td class="px-4 py-3 text-slate-400">{{ t.fecha_cierre or '-' }}</td>
+                    <td class="px-4 py-3 {% if t.dias_retrazo and t.dias_retrazo > 0 %}text-red-400 font-bold{% else %}text-slate-400{% endif %}">
+                        {{ t.dias_retrazo or 0 }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">No se encontraron tickets.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages and total_pages > 1 %}
+    <div class="flex items-center justify-between mt-6 text-sm text-slate-400">
+        <span>Mostrando {{ start }}-{{ end }} de {{ total_results }}</span>
+        <div class="flex gap-1">
+            {% for n in page_numbers %}
+                {% if n == '...' %}
+                    <span class="px-3 py-1">...</span>
+                {% else %}
+                    <a href="{{ url_for('main.reportes_tickets', page=n, search=search_query, area=selected_area, color=selected_color, estatus=selected_estatus, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta) }}"
+                       class="px-3 py-1 rounded-lg {% if n == page %}bg-emerald-500 text-slate-950 font-bold{% else %}bg-slate-900/60 hover:bg-slate-800{% endif %}">{{ n }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

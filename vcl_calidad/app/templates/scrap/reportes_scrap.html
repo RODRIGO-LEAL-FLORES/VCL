@@ -15,7 +15,7 @@
                class="inline-flex items-center gap-2 rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-300 hover:bg-slate-800 transition">
                 &lsaquo; Menú
             </a>
-
+            {% if current_user.rol.id in [1, 2] %}
             <a href="{{ url_for('main.scrap_reporte_pdf', **filtros) }}"
             target="_blank"
             class="inline-flex items-center gap-2 rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-red-400 hover:bg-red-900/30 transition">
@@ -24,6 +24,7 @@
                 </svg>
                 Exportar PDF
             </a>
+            {% endif %}
         </div>
     </div>
 

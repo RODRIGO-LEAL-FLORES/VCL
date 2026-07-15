@@ -19,6 +19,7 @@
     <!-- Grid de Opciones -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
+         {% if current_user.rol.id in [1, 2] %}
         <!-- ================= OPERACIÓN PRINCIPAL ================= -->
         <a href="{{ url_for('main.scrap_section', section='nuevo') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-emerald-500/50 shadow-xl shadow-emerald-950/20 hover:border-emerald-500 transition-all ring-1 ring-emerald-500/10 lg:col-span-2 md:col-span-2">
             <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-3">
@@ -30,8 +31,11 @@
             </h2>
             <p class="text-slate-400 text-sm">Abre el formulario operativo para capturar pesos, defectos, mermas en tiempo real y registrar la trazabilidad en piso.</p>
         </a>
+        {% endif %}
 
-        <!-- ================= REPORTES ================= -->
+
+
+         <!-- ================= REPORTES ================= -->
         <a href="{{ url_for('main.scrap_reportes') }}" class="group block p-6 rounded-3xl bg-[#020f14]/90 border border-blue-500/40 shadow-xl shadow-blue-950/10 hover:border-blue-400 transition-all ring-1 ring-blue-500/10">
             <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -41,6 +45,8 @@
             </h2>
             <p class="text-slate-400 text-sm">Filtros avanzados, KPIs, gráficas por defecto, turno, operador y exportación a CSV.</p>
         </a>
+         {% if current_user.rol.id in [1, 2] %}
+       
 
        
         <!-- ================= CATÁLOGOS ================= -->
@@ -113,6 +119,8 @@
             <h2 class="text-xl font-bold text-white mb-3">Estatus</h2>
             <p class="text-slate-400 text-sm">Configurar los estados de disposición y liberación del material.</p>
         </a>
+        
+        {% endif %}
 
     </div>
 </div>
