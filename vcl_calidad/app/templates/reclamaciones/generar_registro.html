@@ -1,0 +1,684 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Reclamación - Reclamaciones{% endblock %}
+
+{% block content %}
+<section class="antialiased">
+    <div class="mx-auto max-w-screen-2xl px-4 lg:px-12">
+
+        <div class="bg-[#020f14]/90 border border-slate-800/80 shadow-2xl shadow-slate-950/40 rounded-[2rem] overflow-hidden">
+
+            <div class="px-6 py-6 border-b border-slate-800/80 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <p class="text-slate-400 uppercase tracking-[0.24em] text-xs font-bold mb-2">alta de reclamación</p>
+                    <h1 class="text-3xl font-black text-white">{{ registros|length }}</h1>
+                    <p class="text-slate-500 text-sm mt-1">Mostrando los últimos {{ registros|length }} registros</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-end">
+                    <a href="{{ url_for('main.reclamaciones') }}" class="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-200 hover:bg-slate-900 transition">Volver a Reclamaciones</a>
+                    <button type="button" onclick="document.getElementById('createModal').classList.remove('hidden')" class="inline-flex items-center justify-center rounded-full bg-brandGreen px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-lg shadow-brandGreen/20 hover:bg-[#175b2f] transition">+ Nueva Reclamación</button>
+                </div>
+            </div>
+
+            <div class="px-6 py-6 space-y-6">
+
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="rounded-2xl border border-slate-700 bg-slate-900/60 px-5 py-3 text-sm text-slate-300">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- ============================= -->
+                <!-- TABLA DE REGISTROS RECIENTES -->
+                <!-- ============================= -->
+                <div class="rounded-[2rem] border border-slate-800/80 bg-[#02131c]/80 overflow-hidden">
+                    <div class="px-5 py-4 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <p class="text-slate-400 text-sm">Reclamaciones recientes</p>
+                        </div>
+                        <div class="max-w-md w-full">
+                            <label for="search-registro" class="sr-only">Buscar reclamación</label>
+                            <div class="relative">
+                                <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-500">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1012 19.5a7.5 7.5 0 004.65-2.85z" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="search-registro" onkeyup="filtrarRegistros()" placeholder="Buscar por ID reporte, issue, cliente o estatus" class="w-full rounded-full border border-slate-700 bg-slate-950/80 py-3 pl-12 pr-4 text-sm text-slate-200 placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm text-slate-300">
+                            <thead class="bg-[#03121b]/90 text-xs uppercase tracking-[0.2em] text-slate-500">
+                                <tr>
+                                    <th class="px-6 py-4">ID Reporte</th>
+                                    <th class="px-6 py-4">Issue</th>
+                                    <th class="px-6 py-4">Categoría</th>
+                                    <th class="px-6 py-4">Cliente</th>
+                                    <th class="px-6 py-4">Pipeline</th>
+                                    <th class="px-6 py-4">F. Reporte</th>
+                                    <th class="px-6 py-4">Retraso (días)</th>
+                                    <th class="px-6 py-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-registros" class="divide-y divide-slate-800/90">
+                                {% for r in registros %}
+                                <tr class="bg-[#020f14]/80 hover:bg-[#051721]/80 transition-colors fila-registro">
+                                    <td class="px-6 py-4 font-semibold text-white">{{ r.id_reporte_cliente }}</td>
+                                    <td class="px-6 py-4 text-slate-200 max-w-xs truncate">{{ r.issue }}</td>
+                                    <td class="px-6 py-4">{{ r.categoria.categoria if r.categoria else '—' }}</td>
+                                    <td class="px-6 py-4">{{ r.cliente.nombre if r.cliente else '—' }}</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-1">
+                                            {% for etapa in checklists[r.id] %}
+                                            <span
+                                                title="{{ etapa.nombre }}"
+                                                class="h-2.5 w-2.5 rounded-full flex-shrink-0
+                                                    {% if etapa.estado_tiempo == 'atrasado' %} bg-red-500
+                                                    {% elif etapa.completado %} bg-emerald-500
+                                                    {% elif etapa.estado_tiempo == 'pendiente' %} bg-amber-400
+                                                    {% else %} bg-slate-700 {% endif %}">
+                                            </span>
+                                            {% if not loop.last %}<span class="h-px w-3 bg-slate-700 flex-shrink-0"></span>{% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <p class="text-xs text-slate-500 mt-1">{{ r.estatus.descripcion_status if r.estatus else '—' }}</p>
+                                    </td>
+                                    <td class="px-6 py-4">{{ r.fecha_reporte.strftime('%d/%m/%Y') if r.fecha_reporte else '—' }}</td>
+                                    <td class="px-6 py-4">{{ r.dias_retrazo_al_reclamo if r.dias_retrazo_al_reclamo is not none else '—' }}</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" onclick="document.getElementById('viewModal{{ r.id }}').classList.remove('hidden')" class="inline-flex items-center justify-center rounded-full bg-slate-700 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-600 transition">Ver</button>
+                                            <button type="button" onclick="document.getElementById('editModal{{ r.id }}').classList.remove('hidden')" class="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Editar</button>
+                                            <form method="POST" action="{{ url_for('main.reclamaciones_eliminar', item_id=r.id) }}" class="inline">
+                                                <button type="submit" onclick="return confirm('¿Eliminar esta reclamación?')" class="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 transition">Eliminar</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr class="bg-[#020f14]/80">
+                                    <td colspan="8" class="px-6 py-12 text-center text-slate-500">No hay reclamaciones registradas aún.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <p id="sin-resultados" class="hidden px-6 py-10 text-center text-slate-500">No se encontraron reclamaciones que coincidan con tu búsqueda.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+            <a href="{{ url_for('main.home') }}" class="text-sm font-semibold text-slate-300 hover:text-emerald-400 transition-colors">← Volver al panel</a>
+        </div>
+    </div>
+</section>
+
+<script>
+function filtrarRegistros() {
+    const termino = document.getElementById('search-registro').value.trim().toLowerCase();
+    const filas = document.querySelectorAll('#tabla-registros .fila-registro');
+    let visibles = 0;
+
+    filas.forEach(function (fila) {
+        const texto = fila.innerText.toLowerCase();
+        const coincide = texto.includes(termino);
+        fila.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+    });
+
+    document.getElementById('sin-resultados').classList.toggle('hidden', visibles !== 0);
+}
+</script>
+{% endblock %}
+
+{% block modals %}
+
+<!-- ============================= -->
+<!-- MODAL: ALTA DE RECLAMACIÓN -->
+<!-- ============================= -->
+<div id="createModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4 py-8 overflow-y-auto">
+    <div class="w-full max-w-4xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-white">Nueva Reclamación</h2>
+            <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        <p class="text-xs text-slate-500 -mt-3 mb-5">Marca cada etapa solo cuando ya ocurrió; el estatus avanza solo según lo que marques.</p>
+
+        <form method="POST" action="{{ url_for('main.reclamaciones_section', section='nuevo') }}">
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">ID Reporte Cliente *</label>
+                    <input type="text" name="id_reporte_cliente" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" placeholder="Ej. RC-2026-001" />
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-2">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Issue / Descripción *</label>
+                    <input type="text" name="issue" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" placeholder="Describe brevemente el problema" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Categoría *</label>
+                    <select name="id_categoria" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="" disabled selected>Selecciona una categoría</option>
+                        {% for cat in categorias %}
+                        <option value="{{ cat.id_categorias }}">{{ cat.categoria }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Defecto *</label>
+                    <select name="id_defecto" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="" disabled selected>Selecciona un defecto</option>
+                        {% for defecto in defectos %}
+                        <option value="{{ defecto.id_defecto }}">{{ defecto.descripcion }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Ocurrencia *</label>
+                    <select name="id_ocurrencia" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="" disabled selected>Selecciona una ocurrencia</option>
+                        {% for ocurrencia in ocurrencias %}
+                        <option value="{{ ocurrencia.id_ocurrencia }}">{{ ocurrencia.ocurrencia }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Tipo de Reclamación *</label>
+                    <select name="id_tipo_de_reclamacion" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="" disabled selected>Selecciona un tipo</option>
+                        {% for tipo in tipos_reclamacion %}
+                        <option value="{{ tipo.id_tipo_de_reclamacion }}">{{ tipo.tipo_reclamacion }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cliente</label>
+                    <select name="id_cliente" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="">Sin especificar</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id_cliente }}">{{ cliente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Contenedor</label>
+                    <select name="id_numero_contenedor" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="">Sin especificar</option>
+                        {% for contenedor in contenedores %}
+                        <option value="{{ contenedor.id_numero_contenedor }}">{{ contenedor.numero_contenedor }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Número de Parte</label>
+                    <input type="text" name="numero_parte" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Lote</label>
+                    <input type="text" name="lote" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Periodo</label>
+                    <input type="text" name="periodo" placeholder="Ej. 2026-P07" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cantidad de Piezas</label>
+                    <input type="number" min="0" name="cantidad_piezas" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cantidad (kg)</label>
+                    <input type="number" min="0" step="0.01" name="cantidad_kg" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Fecha de Reporte *</label>
+                    <input type="date" name="fecha_reporte" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <!-- ============================= -->
+                <!-- CHECKLIST DE AVANCE -->
+                <!-- ============================= -->
+                <div class="sm:col-span-2 lg:col-span-3">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Checklist de avance</label>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="2" data-modo="calendario">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" />
+                                <span>Confirmación</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_confirmacion" class="etapa-fecha hidden mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="3" data-modo="habil">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" />
+                                <span>Contención (D0-D3)</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_contencion" class="etapa-fecha hidden mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="10" data-modo="habil">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" />
+                                <span>CR y AC (D4-D7)</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_CR_AC" class="etapa-fecha hidden mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="20" data-modo="habil">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" />
+                                <span>Cierre (D8)</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_cierre" class="etapa-fecha hidden mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="rounded-full border border-slate-700 bg-slate-950/80 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition">Cancelar</button>
+                <button type="submit" class="rounded-full bg-brandGreen px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brandGreen/20 hover:bg-[#175b2f] transition">Guardar reclamación</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% for r in registros %}
+
+<!-- ============================= -->
+<!-- MODAL: VER DETALLE -->
+<!-- ============================= -->
+<div id="viewModal{{ r.id }}" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4 py-8 overflow-y-auto">
+    <div class="w-full max-w-3xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-white">Detalle — {{ r.id_reporte_cliente }}</h2>
+            <button type="button" onclick="document.getElementById('viewModal{{ r.id }}').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Issue</p>
+                <p class="text-slate-200">{{ r.issue }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Categoría</p>
+                <p class="text-slate-200">{{ r.categoria.categoria if r.categoria else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Defecto</p>
+                <p class="text-slate-200">{{ r.defecto.descripcion if r.defecto else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Ocurrencia</p>
+                <p class="text-slate-200">{{ r.ocurrencia.ocurrencia if r.ocurrencia else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Tipo de Reclamación</p>
+                <p class="text-slate-200">{{ r.tipo_de_reclamacion.tipo_reclamacion if r.tipo_de_reclamacion else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Estatus actual</p>
+                <p class="text-slate-200">{{ r.estatus.descripcion_status if r.estatus else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Cliente</p>
+                <p class="text-slate-200">{{ r.cliente.nombre if r.cliente else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Contenedor</p>
+                <p class="text-slate-200">{{ r.contenedor.numero_contenedor if r.contenedor else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Número de Parte</p>
+                <p class="text-slate-200">{{ r.numero_parte or '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Lote</p>
+                <p class="text-slate-200">{{ r.lote or '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Periodo</p>
+                <p class="text-slate-200">{{ r.periodo or '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Cantidad de Piezas</p>
+                <p class="text-slate-200">{{ r.cantidad_piezas if r.cantidad_piezas is not none else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Cantidad (kg)</p>
+                <p class="text-slate-200">{{ r.cantidad_kg if r.cantidad_kg is not none else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Días de Retraso</p>
+                <p class="text-slate-200">{{ r.dias_retrazo_al_reclamo if r.dias_retrazo_al_reclamo is not none else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Fecha de Reporte</p>
+                <p class="text-slate-200">{{ r.fecha_reporte.strftime('%d/%m/%Y') if r.fecha_reporte else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Fecha de Confirmación</p>
+                <p class="text-slate-200">{{ r.fecha_confirmacion.strftime('%d/%m/%Y') if r.fecha_confirmacion else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Fecha de Contención</p>
+                <p class="text-slate-200">{{ r.fecha_contencion.strftime('%d/%m/%Y') if r.fecha_contencion else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Fecha CR / AC</p>
+                <p class="text-slate-200">{{ r.fecha_CR_AC.strftime('%d/%m/%Y') if r.fecha_CR_AC else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Fecha de Cierre</p>
+                <p class="text-slate-200">{{ r.fecha_cierre.strftime('%d/%m/%Y') if r.fecha_cierre else '—' }}</p>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">Pipeline de la reclamación</p>
+            <div class="flex flex-col gap-2">
+                {% for etapa in checklists[r.id] %}
+                <div class="flex items-center justify-between rounded-xl border px-4 py-3
+                    {% if etapa.estado_tiempo == 'atrasado' %} border-red-800/60 bg-red-950/20
+                    {% elif etapa.estado_tiempo == 'en_tiempo' %} border-emerald-800/60 bg-emerald-950/20
+                    {% elif etapa.estado_tiempo == 'pendiente' %} border-amber-800/60 bg-amber-950/20
+                    {% else %} border-slate-700/60 bg-slate-900/30 {% endif %}">
+                    <div>
+                        <p class="text-sm font-semibold text-white">{{ etapa.nombre }}</p>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            Límite: {{ etapa.fecha_limite.strftime('%d/%m/%Y') if etapa.fecha_limite else '—' }}
+                            {% if etapa.fecha_real %} · Real: {{ etapa.fecha_real.strftime('%d/%m/%Y') }}{% endif %}
+                        </p>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wide
+                        {% if etapa.estado_tiempo == 'atrasado' %} text-red-400
+                        {% elif etapa.estado_tiempo == 'en_tiempo' %} text-emerald-400
+                        {% elif etapa.estado_tiempo == 'pendiente' %} text-amber-400
+                        {% else %} text-slate-500 {% endif %}">
+                        {{ etapa.estado_tiempo.replace('_', ' ') }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-end gap-3">
+            <button type="button" onclick="document.getElementById('viewModal{{ r.id }}').classList.add('hidden'); document.getElementById('editModal{{ r.id }}').classList.remove('hidden')" class="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition">Editar</button>
+            <button type="button" onclick="document.getElementById('viewModal{{ r.id }}').classList.add('hidden')" class="rounded-full border border-slate-700 bg-slate-950/80 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================= -->
+<!-- MODAL: EDITAR RECLAMACIÓN -->
+<!-- ============================= -->
+<div id="editModal{{ r.id }}" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4 py-8 overflow-y-auto">
+    <div class="w-full max-w-4xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-white">Editar reclamación — {{ r.id_reporte_cliente }}</h2>
+            <button type="button" onclick="document.getElementById('editModal{{ r.id }}').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        <p class="text-xs text-slate-500 -mt-3 mb-5">
+            Estatus actual: <span class="font-semibold text-slate-300">{{ r.estatus.descripcion_status if r.estatus else '—' }}</span>
+            — se recalcula solo al guardar, según lo que dejes marcado.
+        </p>
+
+        <form method="POST" action="{{ url_for('main.reclamaciones_editar', item_id=r.id) }}">
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">ID Reporte Cliente *</label>
+                    <input type="text" name="id_reporte_cliente" value="{{ r.id_reporte_cliente }}" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-2">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Issue / Descripción *</label>
+                    <input type="text" name="issue" value="{{ r.issue }}" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Categoría *</label>
+                    <select name="id_categoria" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        {% for cat in categorias %}
+                        <option value="{{ cat.id_categorias }}" {% if r.id_categoria == cat.id_categorias %}selected{% endif %}>{{ cat.categoria }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Defecto *</label>
+                    <select name="id_defecto" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        {% for defecto in defectos %}
+                        <option value="{{ defecto.id_defecto }}" {% if r.id_defecto == defecto.id_defecto %}selected{% endif %}>{{ defecto.descripcion }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Ocurrencia *</label>
+                    <select name="id_ocurrencia" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        {% for ocurrencia in ocurrencias %}
+                        <option value="{{ ocurrencia.id_ocurrencia }}" {% if r.id_ocurrencia == ocurrencia.id_ocurrencia %}selected{% endif %}>{{ ocurrencia.ocurrencia }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Tipo de Reclamación *</label>
+                    <select name="id_tipo_de_reclamacion" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        {% for tipo in tipos_reclamacion %}
+                        <option value="{{ tipo.id_tipo_de_reclamacion }}" {% if r.id_tipo_de_reclamacion == tipo.id_tipo_de_reclamacion %}selected{% endif %}>{{ tipo.tipo_reclamacion }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cliente</label>
+                    <select name="id_cliente" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="">Sin especificar</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id_cliente }}" {% if r.id_cliente == cliente.id_cliente %}selected{% endif %}>{{ cliente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Contenedor</label>
+                    <select name="id_numero_contenedor" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30">
+                        <option value="">Sin especificar</option>
+                        {% for contenedor in contenedores %}
+                        <option value="{{ contenedor.id_numero_contenedor }}" {% if r.id_numero_contenedor == contenedor.id_numero_contenedor %}selected{% endif %}>{{ contenedor.numero_contenedor }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Número de Parte</label>
+                    <input type="text" name="numero_parte" value="{{ r.numero_parte or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Lote</label>
+                    <input type="text" name="lote" value="{{ r.lote or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Periodo</label>
+                    <input type="text" name="periodo" value="{{ r.periodo or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cantidad de Piezas</label>
+                    <input type="number" min="0" name="cantidad_piezas" value="{{ r.cantidad_piezas if r.cantidad_piezas is not none else '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cantidad (kg)</label>
+                    <input type="number" min="0" step="0.01" name="cantidad_kg" value="{{ r.cantidad_kg if r.cantidad_kg is not none else '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Fecha de Reporte *</label>
+                    <input type="date" name="fecha_reporte" value="{{ r.fecha_reporte.isoformat() if r.fecha_reporte else '' }}" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30" />
+                </div>
+
+                <!-- ============================= -->
+                <!-- CHECKLIST DE AVANCE -->
+                <!-- ============================= -->
+                <div class="sm:col-span-2 lg:col-span-3">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Checklist de avance</label>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="2" data-modo="calendario">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" {% if r.fecha_confirmacion %}checked{% endif %} />
+                                <span>Confirmación</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_confirmacion" value="{{ r.fecha_confirmacion.isoformat() if r.fecha_confirmacion else '' }}" class="etapa-fecha {% if not r.fecha_confirmacion %}hidden{% endif %} mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="3" data-modo="habil">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" {% if r.fecha_contencion %}checked{% endif %} />
+                                <span>Contención (D0-D3)</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_contencion" value="{{ r.fecha_contencion.isoformat() if r.fecha_contencion else '' }}" class="etapa-fecha {% if not r.fecha_contencion %}hidden{% endif %} mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="10" data-modo="habil">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" {% if r.fecha_CR_AC %}checked{% endif %} />
+                                <span>CR y AC (D4-D7)</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_CR_AC" value="{{ r.fecha_CR_AC.isoformat() if r.fecha_CR_AC else '' }}" class="etapa-fecha {% if not r.fecha_CR_AC %}hidden{% endif %} mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                        <div class="etapa-item rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3" data-dias="20" data-modo="habil">
+                            <label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer">
+                                <input type="checkbox" class="etapa-check accent-brandGreen h-4 w-4" {% if r.fecha_cierre %}checked{% endif %} />
+                                <span>Cierre (D8)</span>
+                            </label>
+                            <p class="text-xs text-slate-500 mt-1 etapa-limite">Vence: —</p>
+                            <input type="date" name="fecha_cierre" value="{{ r.fecha_cierre.isoformat() if r.fecha_cierre else '' }}" class="etapa-fecha {% if not r.fecha_cierre %}hidden{% endif %} mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-white" />
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('editModal{{ r.id }}').classList.add('hidden')" class="rounded-full border border-slate-700 bg-slate-950/80 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition">Cancelar</button>
+                <button type="submit" class="rounded-full bg-brandGreen px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brandGreen/20 hover:bg-[#175b2f] transition">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function formatearISO(f) {
+    const y = f.getFullYear();
+    const m = String(f.getMonth() + 1).padStart(2, '0');
+    const d = String(f.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function sumarDiasHabiles(fechaISO, dias) {
+    const f = new Date(fechaISO + 'T00:00:00');
+    let contados = 0;
+    while (contados < dias) {
+        f.setDate(f.getDate() + 1);
+        const diaSemana = f.getDay();
+        if (diaSemana !== 0 && diaSemana !== 6) contados++;
+    }
+    return f;
+}
+
+function calcularLimite(fechaISO, dias, modo) {
+    if (!fechaISO) return null;
+    if (modo === 'calendario') {
+        const f = new Date(fechaISO + 'T00:00:00');
+        f.setDate(f.getDate() + dias);
+        return f;
+    }
+    return sumarDiasHabiles(fechaISO, dias);
+}
+
+function activarChecklist(form) {
+    const reporte = form.querySelector('[name="fecha_reporte"]');
+    const items = form.querySelectorAll('.etapa-item');
+
+    function actualizarLimites() {
+        if (!reporte || !reporte.value) return;
+        items.forEach(function (item) {
+            const dias = parseInt(item.dataset.dias, 10);
+            const modo = item.dataset.modo;
+            const limite = calcularLimite(reporte.value, dias, modo);
+            const texto = item.querySelector('.etapa-limite');
+            if (limite && texto) {
+                texto.textContent = 'Vence: ' + limite.toLocaleDateString('es-MX');
+            }
+        });
+    }
+
+    items.forEach(function (item) {
+        const check = item.querySelector('.etapa-check');
+        const fecha = item.querySelector('.etapa-fecha');
+
+        check.addEventListener('change', function () {
+            if (check.checked) {
+                fecha.classList.remove('hidden');
+                if (!fecha.value) {
+                    fecha.value = formatearISO(new Date());
+                }
+            } else {
+                fecha.classList.add('hidden');
+                fecha.value = '';
+            }
+        });
+    });
+
+    if (reporte) {
+        reporte.addEventListener('change', actualizarLimites);
+        actualizarLimites();
+    }
+}
+
+document.querySelectorAll('#createModal form, [id^="editModal"] form').forEach(activarChecklist);
+</script>
+{% endblock %}

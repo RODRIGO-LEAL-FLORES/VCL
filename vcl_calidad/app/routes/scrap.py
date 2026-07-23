@@ -636,10 +636,12 @@ def scrap_reporte_pdf():
 
     # ── KPIs ─────────────────────────────────────────────────────────────────
     total_peso = sum(float(r.peso or 0) for r in registros)
-    total_ng   = sum(int(r.cantidad_ng or 0) for r in registros)
-    total_ret  = sum(int(r.cantidad_retrabajado or 0) for r in registros)
+    total_ng   = sum(float(r.cantidad_ng or 0) for r in registros)
+    total_ret  = sum(float(r.cantidad_retrabajado or 0) for r in registros)
     n_regs     = len(registros)
-
+    
+    # ── KPIs ─────────────────────────────────────────────────────────────────
+  
     # ── Agregaciones ─────────────────────────────────────────────────────────
     def agg(kfn, vfn=lambda r: float(r.peso or 0)):
         m={}

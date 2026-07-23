@@ -10,6 +10,36 @@ from app.models.reclamaciones_models import (
 from app.models.reclamaciones_models.reclamaciones import Reclamacion
 from app.routes.main import main_bp
 from app.models.cliente import Cliente
+from app.models.reclamaciones_models.metodos_reclamaciones import actualizar_estatus_automatico, calcular_checklist
+
+
+# =========================================================================
+# ESTATUS FIJOS DEL PIPELINE (se siembran solos, no se capturan a mano)
+# =========================================================================
+ESTATUS_FIJOS = [
+    (1, "Confirmación"),
+    (2, "Contención (D0-D3)"),
+    (3, "CR y AC (D4-D7)"),
+    (4, "Cierre (D8)"),
+    (5, "Cerrado"),
+]
+
+
+def asegurar_estatus_fijos():
+    """
+    Garantiza que los 5 estatus del pipeline existan en la BD con su
+    'orden' correcto. Es la base de la que depende toda la automatización
+    (metodos_reclamaciones.py busca por orden, no por texto).
+    Se puede llamar varias veces sin duplicar nada.
+    """
+    huerfano = False
+    for orden, nombre in ESTATUS_FIJOS:
+        existente = EstatusReclamacion.query.filter_by(orden=orden).first()
+        if not existente:
+            db.session.add(EstatusReclamacion(orden=orden, descripcion_status=nombre))
+            huerfano = True
+    if huerfano:
+        db.session.commit()
 
 
 # =========================================================================
@@ -21,6 +51,8 @@ def reclamaciones():
     if not current_user.puede_ver_reclamaciones:
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
+
+    asegurar_estatus_fijos()
 
     return render_template('reclamaciones/reclamaciones.html')
 
@@ -35,6 +67,8 @@ def reclamaciones_section(section):
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
 
+    asegurar_estatus_fijos()
+
     edit_id = request.args.get('edit_id', type=int)
 
     # --- LÓGICA PARA REGISTROS DE RECLAMACIONES ---
@@ -44,7 +78,7 @@ def reclamaciones_section(section):
                 fecha_reporte_str      = request.form.get('fecha_reporte')
                 fecha_confirmacion_str = request.form.get('fecha_confirmacion')
 
-                fecha_reporte      = datetime.strptime(fecha_reporte_str, '%Y-%m-%d').date() if fecha_reporte_str else None
+                fecha_reporte      = datetime.strptime(fecha_reporte_str, '%Y-%m-%d').date() if fecha_reporte_str else date.today()
                 fecha_confirmacion = datetime.strptime(fecha_confirmacion_str, '%Y-%m-%d').date() if fecha_confirmacion_str else None
                 fecha_contencion   = datetime.strptime(request.form.get('fecha_contencion'), '%Y-%m-%d').date() if request.form.get('fecha_contencion') else None
                 fecha_CR_AC        = datetime.strptime(request.form.get('fecha_CR_AC'), '%Y-%m-%d').date() if request.form.get('fecha_CR_AC') else None
@@ -63,7 +97,7 @@ def reclamaciones_section(section):
                     id_numero_contenedor   = request.form.get('id_numero_contenedor') or None,
                     id_tipo_de_reclamacion = request.form.get('id_tipo_de_reclamacion'),
                     id_cliente             = request.form.get('id_cliente') or None,
-                    id_estatus             = request.form.get('id_estatus'),
+                    id_estatus             = None,  # se calcula automáticamente abajo, ya no viene del form
                     numero_parte           = request.form.get('numero_parte', '').strip() or None,
                     lote                   = request.form.get('lote', '').strip() or None,
                     cantidad_piezas        = int(request.form.get('cantidad_piezas', 0)) or None,
@@ -76,6 +110,10 @@ def reclamaciones_section(section):
                     dias_retrazo_al_reclamo = dias_retrazo,
                     periodo                = request.form.get('periodo', '').strip() or None,
                 )
+
+                # --- ESTATUS AUTOMÁTICO: se calcula según las fechas capturadas ---
+                actualizar_estatus_automatico(nueva_reclamacion)
+
                 db.session.add(nueva_reclamacion)
                 db.session.commit()
                 flash('Reclamación registrada exitosamente.')
@@ -86,13 +124,19 @@ def reclamaciones_section(section):
             return redirect(url_for('main.reclamaciones_section', section='nuevo'))
 
         # GET
+        registros = Reclamacion.query.order_by(Reclamacion.id.desc()).limit(20).all()
+
+        # Checklist/pipeline calculado para cada registro (para pintarlo en la tabla/modal)
+        checklists = {r.id: calcular_checklist(r) for r in registros}
+
         return render_template('reclamaciones/generar_registro.html',
-            registros         = Reclamacion.query.order_by(Reclamacion.id.desc()).limit(20).all(),
+            registros         = registros,
+            checklists        = checklists,
             categorias        = Categoria.query.order_by(Categoria.categoria).all(),
-            defectos          = Defecto.query.order_by(Defecto.defecto).all(),
+            defectos          = Defecto.query.order_by(Defecto.descripcion).all(),
             ocurrencias       = Ocurrencia.query.order_by(Ocurrencia.ocurrencia).all(),
             tipos_reclamacion = TipoDeReclamacion.query.order_by(TipoDeReclamacion.tipo_reclamacion).all(),
-            estatus_list      = EstatusReclamacion.query.order_by(EstatusReclamacion.descripcion_status).all(),
+            estatus_list      = EstatusReclamacion.query.order_by(EstatusReclamacion.orden).all(),
             clientes          = Cliente.query.order_by(Cliente.nombre).all(),
             contenedores      = Contenedor.query.order_by(Contenedor.numero_contenedor).all(),
         )
@@ -107,8 +151,6 @@ def reclamaciones_section(section):
         'clientes':          (Cliente,            'reclamaciones/clientes.html',          'nombre'),
         'contenedores':      (Contenedor,         'reclamaciones/contenedores.html',      'numero_contenedor'),
     }
-
-
 
     if section in mapping:
         model, template, field = mapping[section]
@@ -163,9 +205,14 @@ def reclamaciones_actions(section, action_type, item_id=None):
         flash("No tienes autorización para acceder a este módulo.")
         return redirect(url_for('main.home'))
 
+    # --- EL PIPELINE DE ESTATUS ES FIJO: no se crean ni se eliminan estatus ---
+    if section == 'estatus' and action_type in ('crear', 'eliminar'):
+        flash('Los estatus del pipeline son fijos y se actualizan automáticamente según las fechas capturadas; solo puedes editar su texto.')
+        return redirect(url_for('main.reclamaciones_section', section=section))
+
     model_mapping = {
         'categorias':        (Categoria,         'categoria',          'id_categorias'),
-        'defectos':          (Defecto,            'defecto',            'id_defecto'),
+        'defectos':          (Defecto,            'descripcion',        'id_defecto'),
         'ocurrencias':       (Ocurrencia,         'ocurrencia',         'id_ocurrencia'),
         'tipos_reclamacion': (TipoDeReclamacion,  'tipo_reclamacion',   'id_tipo_de_reclamacion'),
         'estatus':           (EstatusReclamacion, 'descripcion_status', 'id_estatus'),
@@ -243,14 +290,13 @@ def reclamaciones_editar(item_id):
         registro.id_numero_contenedor   = request.form.get('id_numero_contenedor') or None
         registro.id_tipo_de_reclamacion = request.form.get('id_tipo_de_reclamacion')
         registro.id_cliente             = request.form.get('id_cliente') or None
-        registro.id_estatus             = request.form.get('id_estatus')
         registro.numero_parte           = request.form.get('numero_parte', '').strip() or None
         registro.lote                   = request.form.get('lote', '').strip() or None
         registro.cantidad_piezas        = int(request.form.get('cantidad_piezas', 0)) or None
         registro.cantidad_kg            = float(request.form.get('cantidad_kg', 0)) or None
         registro.periodo                = request.form.get('periodo', '').strip() or None
 
-        registro.fecha_reporte      = datetime.strptime(fecha_reporte_str, '%Y-%m-%d').date() if fecha_reporte_str else None
+        registro.fecha_reporte      = datetime.strptime(fecha_reporte_str, '%Y-%m-%d').date() if fecha_reporte_str else registro.fecha_reporte
         registro.fecha_confirmacion = datetime.strptime(fecha_confirmacion_str, '%Y-%m-%d').date() if fecha_confirmacion_str else None
         registro.fecha_contencion   = datetime.strptime(request.form.get('fecha_contencion'), '%Y-%m-%d').date() if request.form.get('fecha_contencion') else None
         registro.fecha_CR_AC        = datetime.strptime(request.form.get('fecha_CR_AC'), '%Y-%m-%d').date() if request.form.get('fecha_CR_AC') else None
@@ -258,6 +304,9 @@ def reclamaciones_editar(item_id):
 
         if registro.fecha_reporte and registro.fecha_confirmacion:
             registro.dias_retrazo_al_reclamo = (registro.fecha_confirmacion - registro.fecha_reporte).days
+
+        # --- ESTATUS AUTOMÁTICO: se recalcula según las fechas ya capturadas ---
+        actualizar_estatus_automatico(registro)
 
         db.session.commit()
         flash('Reclamación actualizada correctamente.')
@@ -286,6 +335,16 @@ def reclamaciones_eliminar(item_id):
         flash('Reclamación eliminada correctamente.')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al eliminar: {e}')
+        flash(f'No se pudo eliminar: {e}')
 
     return redirect(url_for('main.reclamaciones_section', section='nuevo'))
+
+
+@main_bp.route('/reclamaciones/reportes')
+@login_required
+def reclamaciones_reportes():
+    if not current_user.puede_ver_reclamaciones:
+        flash("No tienes autorización para acceder a este módulo.")
+        return redirect(url_for('main.home'))
+
+    return render_template('reclamaciones/reportes.html')

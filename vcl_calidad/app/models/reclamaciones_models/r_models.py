@@ -41,6 +41,7 @@ class EstatusReclamacion(db.Model):
     __tablename__ = 'estatus_reclamaciones'
     id_estatus = db.Column(db.Integer, primary_key=True)
     descripcion_status = db.Column(db.String(100), nullable=False, unique=True)
+    orden = db.Column(db.Integer, unique=True)
 
     def __repr__(self):
         return f'<EstatusReclamacion {self.descripcion_status}>'

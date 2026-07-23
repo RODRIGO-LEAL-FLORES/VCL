@@ -57,8 +57,8 @@
                         </div>
                         <div class="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
                             <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-1">Días de retraso</p>
-                            <p class="font-semibold {% if ticket.dias_retrazo and ticket.dias_retrazo > 0 %}text-red-400{% else %}text-white{% endif %}">
-                                {{ ticket.dias_retrazo or 0 }}
+                            <p class="font-semibold {% if dias_retrazo and dias_retrazo > 0 %}text-red-400{% else %}text-white{% endif %}">
+                                {{ dias_retrazo or 0 }}
                             </p>
                         </div>
                     </div>

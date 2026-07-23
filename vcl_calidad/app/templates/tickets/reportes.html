@@ -94,9 +94,7 @@
                     <td class="px-4 py-3 text-slate-400">{{ t.fecha_emicion or '-' }}</td>
                     <td class="px-4 py-3 text-slate-400">{{ t.fecha_compromiso or '-' }}</td>
                     <td class="px-4 py-3 text-slate-400">{{ t.fecha_cierre or '-' }}</td>
-                    <td class="px-4 py-3 {% if t.dias_retrazo and t.dias_retrazo > 0 %}text-red-400 font-bold{% else %}text-slate-400{% endif %}">
-                        {{ t.dias_retrazo or 0 }}
-                    </td>
+                    <td class="px-4 py-3 text-slate-400">{{ retraso_map.get(t.id_folio_ticket, 0) }}</td>
                 </tr>
                 {% else %}
                 <tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">No se encontraron tickets.</td></tr>

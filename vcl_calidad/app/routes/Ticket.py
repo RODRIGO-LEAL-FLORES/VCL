@@ -37,7 +37,44 @@ def get_status_id(status_name):
         return fallback.id_estatus_ticket
     
     # Error: no hay ningún estatus disponible (no debería ocurrir si init se ejecutó)
-    raise ValueError("⚠️  NO HAY ESTATUS DISPONIBLES. Ejecute init_fixed_estatus() primero.")
+    raise ValueError("  NO HAY ESTATUS DISPONIBLES. Ejecute init_fixed_estatus() primero.")
+
+
+def get_cerrados_ids():
+    """
+    Devuelve el conjunto de IDs de estatus que se consideran 'Cerrado'.
+    Se usa para saber si un ticket ya cerró o sigue abierto al calcular el retraso.
+    """
+    return {e.id_estatus_ticket for e in Estatus_Ticket.query.filter_by(status_descripcion='Cerrado').all()}
+
+
+def calcular_dias_retrazo(ticket, cerrados_ids=None):
+    """
+    Calcula los días de retraso de un ticket EN TIEMPO REAL, sin depender del
+    valor guardado en la columna `dias_retrazo` (que solo se actualizaba al
+    crear/editar el ticket y por eso se desincronizaba con el paso de los días).
+
+    - Si el ticket no tiene fecha_compromiso -> 0.
+    - Si el ticket ya está Cerrado -> retraso fijo = fecha_cierre - fecha_compromiso
+      (si no tiene fecha_cierre, se asume 0).
+    - Si el ticket sigue abierto -> retraso = hoy - fecha_compromiso.
+    - Nunca retorna valores negativos (se limita a 0 como mínimo).
+    """
+    if not ticket.fecha_compromiso:
+        return 0
+
+    if cerrados_ids is None:
+        cerrados_ids = get_cerrados_ids()
+
+    if ticket.id_estatus_ticket in cerrados_ids:
+        if ticket.fecha_cierre:
+            dias = (ticket.fecha_cierre - ticket.fecha_compromiso).days
+        else:
+            dias = 0
+    else:
+        dias = (datetime.now().date() - ticket.fecha_compromiso).days
+
+    return dias if dias > 0 else 0
 
 
 def create_ticket_from_form():
@@ -134,6 +171,11 @@ def tickets_create():
         elif page_numbers[-1] != '...':
             page_numbers.append('...')
     
+    # Calculamos el retraso EN TIEMPO REAL para cada ticket mostrado en esta
+    # página (se usa en el modal "Ver" de generar_registro.html).
+    cerrados_ids = get_cerrados_ids()
+    retraso_map = {t.id_folio_ticket: calcular_dias_retrazo(t, cerrados_ids) for t in items}
+
     return render_template(
         'tickets/generar_registro.html',
         today=datetime.now().date(),
@@ -147,6 +189,7 @@ def tickets_create():
         end=end,
         search_query=search_query,
         page_numbers=page_numbers,
+        retraso_map=retraso_map,
     )
 
 @main_bp.route('/tickets/mis-pendientes')
@@ -158,7 +201,10 @@ def mis_tickets():
         Ticket.id_estatus_ticket != closed_id
     ).order_by(Ticket.fecha_compromiso.asc()).all()
 
-    return render_template('tickets/mis_tickets.html', tickets=tickets, today=datetime.now().date(), closed_id=closed_id)
+    cerrados_ids = {closed_id}
+    retraso_map = {t.id_folio_ticket: calcular_dias_retrazo(t, cerrados_ids) for t in tickets}
+
+    return render_template('tickets/mis_tickets.html', tickets=tickets, today=datetime.now().date(), closed_id=closed_id, retraso_map=retraso_map)
 
 
 @main_bp.route('/tickets/seguimiento')
@@ -170,7 +216,10 @@ def seguimiento_tickets():
         Ticket.id_estatus_ticket != closed_id
     ).order_by(Ticket.fecha_compromiso.asc()).all()
 
-    return render_template('tickets/seguimiento_tickets.html', tickets=tickets, today=datetime.now().date(), closed_id=closed_id)
+    cerrados_ids = {closed_id}
+    retraso_map = {t.id_folio_ticket: calcular_dias_retrazo(t, cerrados_ids) for t in tickets}
+
+    return render_template('tickets/seguimiento_tickets.html', tickets=tickets, today=datetime.now().date(), closed_id=closed_id, retraso_map=retraso_map)
 
 
 @main_bp.route('/tickets/por-cerrar')
@@ -202,6 +251,7 @@ def ticket_detail(item_id):
             if request.form.get('cerrar_ticket'):
                 ticket.id_estatus_ticket = cerrado_id
                 ticket.fecha_cierre = datetime.now().date()
+                ticket.dias_retrazo = calcular_dias_retrazo(ticket, {cerrado_id})
                 db.session.commit()
                 flash('Ticket cerrado correctamente.')
                 return redirect(url_for('main.ticket_detail', item_id=item_id))
@@ -235,16 +285,15 @@ def ticket_detail(item_id):
             if saved_files and pendiente_validacion_id:
                 ticket.id_estatus_ticket = pendiente_validacion_id
 
-            ticket.dias_retrazo = 0
-            if ticket.fecha_compromiso:
-                overdue_days = (datetime.now().date() - ticket.fecha_compromiso).days
-                ticket.dias_retrazo = overdue_days if overdue_days > 0 else 0
+            ticket.dias_retrazo = calcular_dias_retrazo(ticket, {cerrado_id})
 
             db.session.commit()
             flash('Ticket actualizado correctamente.')
             return redirect(url_for('main.ticket_detail', item_id=item_id))
 
-    return render_template('tickets/ticket_detail.html', ticket=ticket, today=datetime.now().date(), closed_id=cerrado_id, pendiente_validacion_id=pendiente_validacion_id)
+    dias_retrazo = calcular_dias_retrazo(ticket, {cerrado_id})
+
+    return render_template('tickets/ticket_detail.html', ticket=ticket, today=datetime.now().date(), closed_id=cerrado_id, pendiente_validacion_id=pendiente_validacion_id, dias_retrazo=dias_retrazo)
 
 
 # =========================================================================
@@ -444,10 +493,7 @@ def tickets_editar(item_id):
         if registro.fecha_emicion and color_obj and color_obj.dias_resolucion is not None:
             registro.fecha_compromiso = registro.fecha_emicion + timedelta(days=color_obj.dias_resolucion)
 
-        registro.dias_retrazo = 0
-        if registro.fecha_compromiso:
-            overdue_days = (datetime.now().date() - registro.fecha_compromiso).days
-            registro.dias_retrazo = overdue_days if overdue_days > 0 else 0
+        registro.dias_retrazo = calcular_dias_retrazo(registro)
 
         db.session.commit()
         flash('Ticket actualizado correctamente.')
@@ -482,6 +528,7 @@ def tickets_eliminar(item_id):
 
 
 
+    
 
 # =========================================================================
 # REPORTES DE TICKETS (TODOS LOS USUARIOS CON ACCESO AL MÓDULO)
@@ -547,6 +594,12 @@ def reportes_tickets():
     color_map = {c.id_color: c.color_ticket for c in Color_Ticket.query.all()}
     estatus_map = {e.id_estatus_ticket: e.status_descripcion for e in Estatus_Ticket.query.all()}
 
+    # Calculamos el retraso EN TIEMPO REAL para cada ticket mostrado en esta
+    # página, en lugar de usar la columna dias_retrazo (que puede estar
+    # desactualizada si nadie ha vuelto a editar el ticket).
+    cerrados_ids = get_cerrados_ids()
+    retraso_map = {t.id_folio_ticket: calcular_dias_retrazo(t, cerrados_ids) for t in items}
+
     return render_template(
         'tickets/reportes.html',
         items=items,
@@ -568,6 +621,7 @@ def reportes_tickets():
         area_map=area_map,
         color_map=color_map,
         estatus_map=estatus_map,
+        retraso_map=retraso_map,
         today=datetime.now().date(),
     )
 
@@ -588,6 +642,7 @@ def reportes_exportar():
     area_map = {a.id_area: a.area for a in Area.query.all()}
     color_map = {c.id_color: c.color_ticket for c in Color_Ticket.query.all()}
     estatus_map = {e.id_estatus_ticket: e.status_descripcion for e in Estatus_Ticket.query.all()}
+    cerrados_ids = get_cerrados_ids()
 
     output = io.StringIO()
     output.write('\ufeff')  # BOM para que Excel abra bien los acentos
@@ -608,7 +663,7 @@ def reportes_exportar():
             t.fecha_emicion.strftime('%Y-%m-%d') if t.fecha_emicion else '',
             t.fecha_compromiso.strftime('%Y-%m-%d') if t.fecha_compromiso else '',
             t.fecha_cierre.strftime('%Y-%m-%d') if t.fecha_cierre else '',
-            t.dias_retrazo,
+            calcular_dias_retrazo(t, cerrados_ids),
             (t.problematica or '').replace('\n', ' '),
             (t.accion_correctiva or '').replace('\n', ' '),
             (t.evidencia_resolucion or '').replace('\n', ' '),
@@ -677,11 +732,15 @@ def reportes_pdf():
     color_map = {c.id_color: c.color_ticket for c in Color_Ticket.query.all()}
     estatus_map = {e.id_estatus_ticket: e.status_descripcion for e in Estatus_Ticket.query.all()}
 
+    cerrados_ids = get_cerrados_ids()
+    # Calculamos el retraso real de cada ticket una sola vez y lo reutilizamos
+    # tanto en los totales/gráficas como en la tabla de detalle del PDF.
+    retraso_por_ticket = {t.id_folio_ticket: calcular_dias_retrazo(t, cerrados_ids) for t in tickets_list}
+
     total = len(tickets_list)
-    cerrados_ids = {e.id_estatus_ticket for e in Estatus_Ticket.query.filter_by(status_descripcion='Cerrado').all()}
     abiertos = sum(1 for t in tickets_list if t.id_estatus_ticket not in cerrados_ids)
     cerrados = total - abiertos
-    con_retraso = sum(1 for t in tickets_list if t.dias_retrazo and t.dias_retrazo > 0)
+    con_retraso = sum(1 for t in tickets_list if retraso_por_ticket[t.id_folio_ticket] > 0)
 
     por_area = Counter(area_map.get(t.id_area_responsable, 'Sin área') for t in tickets_list)
     por_color = Counter(color_map.get(t.id_color_ticket, 'Sin color') for t in tickets_list)
@@ -753,7 +812,7 @@ def reportes_pdf():
     # 3. Rutas de los logos (carpeta static)
     # ---------------------------------------------------------------
     static_folder = current_app.static_folder
-    logo_path = os.path.join(static_folder, 'logo2.png')
+    logo_path = os.path.join(static_folder, 'logo2.jpg')
    
 
     # ---------------------------------------------------------------
@@ -890,7 +949,7 @@ def reportes_pdf():
             estatus_map.get(t.id_estatus_ticket, '-'),
             t.fecha_emicion.strftime('%Y-%m-%d') if t.fecha_emicion else '-',
             t.fecha_cierre.strftime('%Y-%m-%d') if t.fecha_cierre else '-',
-            str(t.dias_retrazo or 0),
+            str(retraso_por_ticket[t.id_folio_ticket]),
         ])
 
     detail_table = Table(table_data, repeatRows=1,

@@ -90,7 +90,8 @@
                                                 data-fecha-emicion="{{ item.fecha_emicion if item.fecha_emicion else '—' }}"
                                                 data-fecha-compromiso="{{ item.fecha_compromiso if item.fecha_compromiso else '—' }}"
                                                 data-fecha-cierre="{{ item.fecha_cierre if item.fecha_cierre else '—' }}"
-                                                data-dias-retrazo="{{ item.dias_retrazo if item.dias_retrazo is not none else 0 }}"
+
+                                                data-dias-retrazo="{{ retraso_map.get(item.id_folio_ticket, 0) }}"
                                                 data-problematica="{{ item.problematica or 'Sin descripción registrada.' }}"
                                                 data-accion-correctiva="{{ item.accion_correctiva or 'Sin acciones correctivas registradas.' }}"
                                                 data-evidencia="{{ item.evidencia_resolucion or 'Sin evidencia registrada.' }}"
