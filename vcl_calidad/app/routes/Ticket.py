@@ -1,13 +1,12 @@
 import os
 import uuid
-import smtplib
-from email.message import EmailMessage
 from flask import render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_required, current_user
+from flask_mail import Message
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from sqlalchemy import cast, String
-from app import db
+from app import db, mail
 
 from app.models.tickect_models import Color_Ticket, Area, Estatus_Ticket
 from app.models.tickect_models.ticket import Ticket, TicketEvidence
@@ -33,7 +32,7 @@ def get_status_id(status_name):
     # Fallback: usar el primer estatus disponible
     fallback = Estatus_Ticket.query.order_by(Estatus_Ticket.id_estatus_ticket).first()
     if fallback:
-        print(f"⚠️  Estatus '{status_name}' no encontrado. Usando fallback: '{fallback.status_descripcion}'")
+        print(f"  Estatus '{status_name}' no encontrado. Usando fallback: '{fallback.status_descripcion}'")
         return fallback.id_estatus_ticket
     
     # Error: no hay ningún estatus disponible (no debería ocurrir si init se ejecutó)
@@ -77,6 +76,49 @@ def calcular_dias_retrazo(ticket, cerrados_ids=None):
     return dias if dias > 0 else 0
 
 
+def send_ticket_notification(ticket):
+    """
+    Notifica por correo a los usuarios del área responsable de un ticket
+    recién creado. Si algún destinatario no tiene email, se omite sin
+    interrumpir el envío a los demás.
+    """
+    if not ticket.id_area_responsable:
+        return
+
+    usuarios = Usuario.query.filter(
+        Usuario.id_area == ticket.id_area_responsable,
+        Usuario.puede_ver_tickets.is_(True),
+        Usuario.activo.is_(True)
+    ).all()
+
+    destinatarios = [u.email for u in usuarios if u.email]
+    if not destinatarios:
+        return
+
+    area_nombre = ticket.area_responsable.area if ticket.area_responsable else 'N/A'
+
+    msg = Message(
+        subject=f"Nuevo Ticket #{ticket.id_folio_ticket}",
+        recipients=destinatarios
+    )
+    msg.body = f"""Hola,
+
+Se ha registrado un nuevo ticket para tu área.
+
+Folio: {ticket.id_folio_ticket}
+Área responsable: {area_nombre}
+Emisor: {ticket.emisor}
+
+Fecha de emisión: {ticket.fecha_emicion}
+
+Problemática:
+{ticket.problematica or 'Sin descripción registrada.'}
+
+Por favor ingresa al sistema para atenderlo.
+"""
+    mail.send(msg)
+
+
 def create_ticket_from_form():
     fecha_cierre_str = request.form.get('fecha_cierre')
     problematica_str = request.form.get('problematica', '').strip() or None
@@ -104,7 +146,11 @@ def create_ticket_from_form():
     )
     db.session.add(nuevo_ticket)
     db.session.commit()
-    # send_ticket_notification(nuevo_ticket)  # Desactivado temporalmente
+
+    try:
+        send_ticket_notification(nuevo_ticket)
+    except Exception as e:
+        current_app.logger.error(f"Error enviando correo de notificación de ticket: {e}")
 
 
 # =========================================================================
@@ -211,15 +257,22 @@ def mis_tickets():
 @login_required
 def seguimiento_tickets():
     closed_id = get_status_id('Cerrado') or 3
-    tickets = Ticket.query.filter(
+    search_query = request.args.get('search', '', type=str).strip()
+
+    query = Ticket.query.filter(
         Ticket.id_area_responsable == current_user.id_area,
         Ticket.id_estatus_ticket != closed_id
-    ).order_by(Ticket.fecha_compromiso.asc()).all()
+    )
+
+    if search_query:
+        query = query.filter(cast(Ticket.id_folio_ticket, String).ilike(f'%{search_query}%'))
+
+    tickets = query.order_by(Ticket.fecha_compromiso.asc()).all()
 
     cerrados_ids = {closed_id}
     retraso_map = {t.id_folio_ticket: calcular_dias_retrazo(t, cerrados_ids) for t in tickets}
 
-    return render_template('tickets/seguimiento_tickets.html', tickets=tickets, today=datetime.now().date(), closed_id=closed_id, retraso_map=retraso_map)
+    return render_template('tickets/seguimiento_tickets.html', tickets=tickets, today=datetime.now().date(), closed_id=closed_id, retraso_map=retraso_map, search_query=search_query)
 
 
 @main_bp.route('/tickets/por-cerrar')
@@ -528,7 +581,6 @@ def tickets_eliminar(item_id):
 
 
 
-    
 
 # =========================================================================
 # REPORTES DE TICKETS (TODOS LOS USUARIOS CON ACCESO AL MÓDULO)
@@ -812,7 +864,7 @@ def reportes_pdf():
     # 3. Rutas de los logos (carpeta static)
     # ---------------------------------------------------------------
     static_folder = current_app.static_folder
-    logo_path = os.path.join(static_folder, 'logo2.jpg')
+    logo_path = os.path.join(static_folder, 'logo2.png')
    
 
     # ---------------------------------------------------------------

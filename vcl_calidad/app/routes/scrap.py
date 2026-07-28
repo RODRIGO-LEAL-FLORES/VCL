@@ -1,7 +1,8 @@
 from functools import wraps
-from flask import render_template, request, redirect, url_for, session, flash, make_response
+from flask import render_template, request, redirect, url_for, session, flash, make_response, current_app
 from datetime import datetime, date
-from app import db
+from app import db, mail
+from flask_mail import Message
 
 # Importaciones de los modelos del módulo de Scrap y generales
 from app.models.scrap_models import (
@@ -37,6 +38,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 
+from app.models.usuario import Usuario
+
+
 # =========================================================================
 # DECORADOR DE SEGURIDAD: RESTRINGE SECCIONES A ROLES ADMINISTRATIVOS
 # =========================================================================
@@ -53,6 +57,66 @@ def requiere_rol_admin(f):
             return redirect(url_for('main.scrap_reportes'))
         return f(*args, **kwargs)
     return decorated
+
+
+# =========================================================================
+# NOTIFICACIÓN POR CORREO: SCRAP QUE EXCEDE EL LÍMITE DE NG
+# =========================================================================
+LIMITE_NG_KG = 500  # límite permitido de piezas NG (en kg) por registro de scrap
+
+
+def scrap_ticket_notification(registro):
+    """
+    Notifica por correo a los usuarios responsables cuando un registro de
+    scrap sobrepasa el límite permitido de NG (No Good / piezas defectuosas).
+
+    Máximo permitido de scrap NG por registro: 500 KG.
+    Cada vez que un registro sobrepasa ese límite se envía un correo a todos
+    los usuarios que tengan permiso de ver el módulo de scrap
+    (`puede_ver_scrap=True`) y estén activos.
+    """
+    if not registro.cantidad_ng or registro.cantidad_ng <= LIMITE_NG_KG:
+        return
+
+    usuarios = Usuario.query.filter(
+        Usuario.puede_ver_scrap.is_(True),
+        Usuario.activo.is_(True),
+        Usuario.rol_id.in_([1, 2])  # Solo roles administrativos
+    ).all()
+
+    destinatarios = [u.email for u in usuarios if u.email]
+    if not destinatarios:
+        return
+
+    maquina_nombre = registro.maquina.nombre if registro.maquina else 'N/A'
+    operador_nombre = registro.operador.nombre if registro.operador else 'N/A'
+    defecto_nombre = registro.defecto.defecto if registro.defecto else 'N/A'
+    fecha_str = registro.fecha_registro.strftime('%Y-%m-%d %H:%M') if registro.fecha_registro else 'N/A'
+
+    msg = Message(
+        subject=f" Alerta de Scrap — Registro #{registro.id} excede el límite de NG",
+        recipients=destinatarios
+    )
+    msg.body = f"""Hola,
+
+Un registro de scrap ha sobrepasado el límite permitido de {LIMITE_NG_KG} KG en peso NG.
+
+Registro: #{registro.id}
+Máquina: {maquina_nombre}
+Operador: {operador_nombre}
+Defecto: {defecto_nombre}
+
+Cliente: {registro.cliente.nombre if registro.cliente else 'N/A'}
+Lote: {registro.lote or 'N/A'}
+
+
+Peso total: {registro.peso or 0} kg
+Cantidad NG: {registro.cantidad_ng} kg
+Fecha de registro: {fecha_str}
+
+Por favor ingresa al sistema para revisar este registro.
+"""
+    mail.send(msg)
 
 
 def detectar_turno(hora_obj):
@@ -142,6 +206,11 @@ def scrap_section(section):
                 db.session.add(nuevo_registro)
                 db.session.commit()
                 flash('Registro generado exitosamente.')
+
+                try:
+                    scrap_ticket_notification(nuevo_registro)
+                except Exception as e:
+                    current_app.logger.error(f"Error enviando correo de alerta de scrap: {e}")
             except Exception as e:
                 db.session.rollback()
                 flash(f'Error al guardar: {e}')
@@ -379,6 +448,11 @@ def scrap_editar(item_id):
 
         db.session.commit()
         flash('Registro actualizado correctamente.')
+
+        try:
+            scrap_ticket_notification(registro)
+        except Exception as e:
+            current_app.logger.error(f"Error enviando correo de alerta de scrap: {e}")
     except Exception as e:
         db.session.rollback()
         flash(f'Error al actualizar: {e}')
@@ -638,137 +712,6 @@ def scrap_reporte_pdf():
     total_peso = sum(float(r.peso or 0) for r in registros)
     total_ng   = sum(float(r.cantidad_ng or 0) for r in registros)
     total_ret  = sum(float(r.cantidad_retrabajado or 0) for r in registros)
-    n_regs     = len(registros)
-    
-    # ── KPIs ─────────────────────────────────────────────────────────────────
-  
-    # ── Agregaciones ─────────────────────────────────────────────────────────
-    def agg(kfn, vfn=lambda r: float(r.peso or 0)):
-        m={}
-        for r in registros:
-            k=kfn(r)
-            if k: m[k]=m.get(k,0.0)+vfn(r)
-        return sorted(m.items(),key=lambda x:x[1],reverse=True)
-
-    ng_ = lambda r: int(r.cantidad_ng or 0)
-    data_def = agg(lambda r: r.defecto.defecto               if r.defecto        else None)
-    data_maq = agg(lambda r: r.maquina.nombre                if r.maquina        else None)
-    data_op  = agg(lambda r: r.operador.nombre               if r.operador       else None, ng_)
-    data_est = agg(lambda r: r.estatus.descripcion_status    if r.estatus        else None, ng_)
-    data_tur = agg(lambda r: r.turno.nombre_turno            if r.turno          else None)
-    data_cli = agg(lambda r: r.cliente.nombre                if r.cliente        else None)
-    data_sup = agg(lambda r: r.supervisor.nombre             if r.supervisor     else None)
-    data_ace = agg(lambda r: r.tipo_acero.especificacion     if r.tipo_acero     else None)
-    data_lam = agg(lambda r: r.tipo_laminacion.especificacion if r.tipo_laminacion else None)
-    data_cla = agg(lambda r: r.clasificacion.clasificacion   if r.clasificacion  else None)
-
-    dia_map={}
-    for r in registros:
-        if r.fecha_registro:
-            k=r.fecha_registro.strftime('%Y-%m-%d'); lbl=r.fecha_registro.strftime('%d/%m')
-            if k not in dia_map: dia_map[k]={'fecha':lbl,'peso':0.0,'ng':0}
-            dia_map[k]['peso']=round(dia_map[k]['peso']+float(r.peso or 0),2)
-            dia_map[k]['ng']+=int(r.cantidad_ng or 0)
-    data_dia=[v for _,v in sorted(dia_map.items())]
-
-    # ── Estilos ───────────────────────────────────────────────────────────────
-    fecha_gen=datetime.now().strftime('%d/%m/%Y %H:%M')
-    sty=getSampleStyleSheet()
-    s_t=ParagraphStyle('t',parent=sty['Title'],fontSize=18,textColor=colors.HexColor('#0f172a'),spaceAfter=1,leading=22)
-    s_s=ParagraphStyle('s',parent=sty['Normal'],fontSize=7,textColor=colors.HexColor('#64748b'),spaceAfter=5)
-    s_h=ParagraphStyle('h',parent=sty['Normal'],fontSize=7,textColor=colors.HexColor('#64748b'),fontName='Helvetica-Bold',spaceAfter=2)
-
-    PAGE=landscape(A4); M=12*mm; W=PAGE[0]-2*M; WM=W/mm; H=75
-    buf_pdf=BytesIO()
-    doc=SimpleDocTemplate(buf_pdf,pagesize=PAGE,leftMargin=M,rightMargin=M,topMargin=M,bottomMargin=13*mm)
-    story=[]
-
-    # ══ PÁGINA 1: PORTADA + KPIs ═════════════════════════════════════════════
-    story.append(Paragraph("Reporte de Scrap", s_t))
-    story.append(Paragraph(f"Generado: {fecha_gen}", s_s))
-    story.append(HRFlowable(width='100%', thickness=1.2, color=colors.HexColor('#16a34a'), spaceAfter=6))
-
-    kd = [['REGISTROS','PESO (kg)','PESO NG','RETRABAJO','PROM / REG'],
-          [str(n_regs), f'{total_peso:,.1f}', str(total_ng), str(total_ret),
-           f'{total_peso/n_regs:,.1f}' if n_regs else '—']]
-    kt = Table(kd, colWidths=[WM/5*mm]*5)
-    kt.setStyle(TableStyle([
-        ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#f1f5f9')),
-        ('TEXTCOLOR',(0,0),(-1,0),colors.HexColor('#64748b')),
-        ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),('FONTSIZE',(0,0),(-1,0),6.5),
-        ('ALIGN',(0,0),(-1,0),'CENTER'),('TOPPADDING',(0,0),(-1,0),4),('BOTTOMPADDING',(0,0),(-1,0),4),
-        ('FONTNAME',(0,1),(-1,1),'Helvetica-Bold'),('FONTSIZE',(0,1),(-1,1),17),
-        ('ALIGN',(0,1),(-1,1),'CENTER'),('TOPPADDING',(0,1),(-1,1),7),('BOTTOMPADDING',(0,1),(-1,1),7),
-        ('TEXTCOLOR',(1,1),(1,1),colors.HexColor('#d97706')),
-        ('TEXTCOLOR',(2,1),(2,1),colors.HexColor('#dc2626')),
-        ('TEXTCOLOR',(3,1),(3,1),colors.HexColor('#2563eb')),
-        ('TEXTCOLOR',(4,1),(4,1),colors.HexColor('#64748b')),
-        ('BOX',(0,0),(-1,-1),.5,colors.HexColor('#e2e8f0')),
-        ('INNERGRID',(0,0),(-1,-1),.3,colors.HexColor('#e2e8f0')),
-        ('ROWBACKGROUNDS',(0,1),(-1,1),[colors.white]),
-    ]))
-    story.append(kt)
-
-    # ══ UNA GRÁFICA POR PÁGINA ═══════════════════════════════════════════════
-    H_FULL = 150  # altura generosa: ya no comparte espacio con otra gráfica en la misma hoja
-
-    graficas = [
-        ('Tendencia diaria',  lambda: line(data_dia, w_mm=WM, h_mm=120)),
-        ('Top Defectos',      lambda: bar(data_def, 'Top Defectos — Peso (kg)', scheme='green',  w_mm=WM, h_mm=H_FULL)),
-        ('Top Máquinas',      lambda: bar(data_maq, 'Top Máquinas — Peso (kg)', scheme='amber',  w_mm=WM, h_mm=H_FULL)),
-        ('Top Operadores',    lambda: bar(data_op,  'Top Operadores — Peso NG', scheme='red',    w_mm=WM, h_mm=H_FULL, unit='pzs')),
-        ('NG por Estatus',    lambda: bar(data_est, 'NG por Estatus',           scheme='purple', w_mm=WM, h_mm=H_FULL, unit='pzs', n=6)),
-        ('Por Turno',         lambda: bar(data_tur, 'Por Turno',                scheme='teal',   w_mm=WM, h_mm=H_FULL, n=4)),
-        ('Por Cliente',       lambda: bar(data_cli, 'Por Cliente',              scheme='blue',   w_mm=WM, h_mm=H_FULL)),
-        ('Por Supervisor',    lambda: bar(data_sup, 'Por Supervisor',           scheme='slate',  w_mm=WM, h_mm=H_FULL)),
-        ('Por Tipo de Acero', lambda: bar(data_ace, 'Por Tipo Acero',           scheme='orange', w_mm=WM, h_mm=H_FULL)),
-        ('Por Laminación',    lambda: bar(data_lam, 'Por Laminación',           scheme='lime',   w_mm=WM, h_mm=H_FULL, n=4)),
-        ('Por Clasificación', lambda: bar(data_cla, 'Por Clasificación',        scheme='red',    w_mm=WM, h_mm=H_FULL, n=4)),
-    ]
-
-    for titulo, generador in graficas:
-        buf_chart = generador()
-        if buf_chart is None:
-            continue  # sin datos → se omite esa página en vez de dejarla en blanco
-        story.append(PageBreak())
-        story += _sec(titulo, s_h)
-        story.append(_img(buf_chart, WM, H_FULL))
-
-    def footer(cv,doc):
-        cv.saveState(); pw=doc.pagesize[0]
-        cv.setStrokeColor(colors.HexColor('#e2e8f0')); cv.setLineWidth(.4)
-        cv.line(M,11*mm,pw-M,11*mm)
-        cv.setFont('Helvetica',6.5); cv.setFillColor(colors.HexColor('#64748b'))
-        cv.drawString(M,8*mm,"Reporte de Scrap")
-        cv.drawRightString(pw-M,8*mm,f"Pág. {doc.page}  ·  {fecha_gen}")
-        cv.restoreState()
-
-    doc.build(story,onFirstPage=footer,onLaterPages=footer)
-    buf_pdf.seek(0)
-    resp=make_response(buf_pdf.read())
-    resp.headers['Content-Type']='application/pdf'
-    resp.headers['Content-Disposition']=f'attachment; filename="reporte_scrap_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf"'
-    return resp
-    if not current_user.puede_ver_scrap:
-        flash("No tienes autorización."); return redirect(url_for('main.home'))
-
-    # ── Filtros ───────────────────────────────────────────────────────────────
-    filtros = {k: request.args.get(k,'') for k in [
-        'fecha_inicio','fecha_fin','id_maquina','id_operador','id_cliente',
-        'id_estatus_scrap','id_defecto_scrap','id_turno','id_supervisor',
-        'id_clasificacion','id_tipo_acero','id_tipo_laminacion']}
-
-    q = Scrap.query
-    if filtros['fecha_inicio']: q=q.filter(Scrap.fecha_registro>=datetime.strptime(filtros['fecha_inicio'],'%Y-%m-%d'))
-    if filtros['fecha_fin']:    q=q.filter(Scrap.fecha_registro<=datetime.strptime(filtros['fecha_fin'],'%Y-%m-%d').replace(hour=23,minute=59,second=59))
-    for field in ['id_maquina','id_operador','id_cliente','id_estatus_scrap','id_defecto_scrap','id_turno','id_supervisor','id_clasificacion','id_tipo_acero','id_tipo_laminacion']:
-        if filtros[field]: q=q.filter(getattr(Scrap,field)==int(filtros[field]))
-    registros = q.order_by(Scrap.fecha_registro.asc()).all()
-
-    # ── KPIs ─────────────────────────────────────────────────────────────────
-    total_peso = sum(float(r.peso or 0) for r in registros)
-    total_ng   = sum(int(r.cantidad_ng or 0) for r in registros)
-    total_ret  = sum(int(r.cantidad_retrabajado or 0) for r in registros)
     n_regs     = len(registros)
 
     # ── Agregaciones ─────────────────────────────────────────────────────────

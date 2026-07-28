@@ -1,10 +1,11 @@
 import os
-from datetime import timedelta  # ← Agrega este import
+from datetime import timedelta
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_mail import Mail  # ← NUEVO
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,6 +13,7 @@ load_dotenv()
 db = SQLAlchemy()
 login_manager = LoginManager()
 limiter = Limiter(key_func=get_remote_address, default_limits=["100 per minute"])
+mail = Mail()  # ← NUEVO: instancia global de Flask-Mail
 
 def create_app():
     app = Flask(__name__)
@@ -38,6 +40,7 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'main.welcome'
     limiter.init_app(app)
+    mail.init_app(app)  # ← NUEVO: conecta Flask-Mail con la app
     
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
