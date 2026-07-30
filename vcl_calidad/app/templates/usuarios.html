@@ -81,6 +81,18 @@
             <div>
               <p class="text-slate-400 text-sm">Usuarios disponibles</p>
             </div>
+            <div class="relative w-full sm:w-80">
+              <svg class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104 4a7.5 7.5 0 0012.65 12.65z" />
+              </svg>
+              <input
+                type="text"
+                id="userSearchInput"
+                onkeyup="filtrarUsuarios()"
+                placeholder="Buscar por nombre, email, rol o área..."
+                class="w-full rounded-full border border-slate-700 bg-slate-950/70 pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/30"
+              />
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full text-left text-sm text-slate-300">
@@ -96,7 +108,7 @@
                   <th class="px-6 py-4">Área</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800/90">
+              <tbody id="usuariosTableBody" class="divide-y divide-slate-800/90">
                 {% for u in users %}
                 <tr class="bg-[#020f14]/80 hover:bg-[#051721]/80 transition-colors">
                   <td class="px-6 py-4 font-semibold text-white">{{ u.id }}</td>
@@ -130,6 +142,11 @@
                 {% endfor %}
               </tbody>
             </table>
+            <p id="noResultsMessage" class="hidden px-6 py-12 text-center text-slate-500">No se encontraron usuarios que coincidan con la búsqueda.</p>
+          </div>
+          <div id="paginationContainer" class="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-800/80">
+            <p id="paginationInfo" class="text-xs text-slate-500"></p>
+            <div id="paginationButtons" class="flex flex-wrap items-center gap-2"></div>
           </div>
         </div>
       </div>
@@ -200,4 +217,108 @@
     </form>
   </div>
 </div>
-{% endblock %} 
+
+<script>
+  const USUARIOS_POR_HOJA = 10;
+  let paginaActual = 1;
+
+  function getFilasDeDatos() {
+    // Excluye la fila de "No hay usuarios registrados aún." (no tiene 8 celdas)
+    return Array.from(document.querySelectorAll('#usuariosTableBody tr')).filter(function (fila) {
+      return fila.children.length >= 8;
+    });
+  }
+
+  function getFilasFiltradas() {
+    const input = document.getElementById('userSearchInput');
+    const filtro = input.value.trim().toLowerCase();
+    return getFilasDeDatos().filter(function (fila) {
+      return fila.innerText.toLowerCase().includes(filtro);
+    });
+  }
+
+  function filtrarUsuarios() {
+    paginaActual = 1;
+    renderizarTabla();
+  }
+
+  function irAHoja(numeroHoja) {
+    paginaActual = numeroHoja;
+    renderizarTabla();
+  }
+
+  function renderizarTabla() {
+    const todasLasFilas = getFilasDeDatos();
+    const filasFiltradas = getFilasFiltradas();
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationButtons = document.getElementById('paginationButtons');
+
+    // Oculta todas las filas primero
+    todasLasFilas.forEach(function (fila) {
+      fila.style.display = 'none';
+    });
+
+    const totalFiltrados = filasFiltradas.length;
+    const totalHojas = Math.max(1, Math.ceil(totalFiltrados / USUARIOS_POR_HOJA));
+    if (paginaActual > totalHojas) paginaActual = totalHojas;
+    if (paginaActual < 1) paginaActual = 1;
+
+    const inicio = (paginaActual - 1) * USUARIOS_POR_HOJA;
+    const fin = inicio + USUARIOS_POR_HOJA;
+    const filasDeEstaHoja = filasFiltradas.slice(inicio, fin);
+    filasDeEstaHoja.forEach(function (fila) {
+      fila.style.display = '';
+    });
+
+    if (noResultsMessage) {
+      noResultsMessage.classList.toggle('hidden', totalFiltrados !== 0);
+    }
+
+    // Info de paginación
+    if (paginationInfo) {
+      if (totalFiltrados === 0) {
+        paginationInfo.textContent = '';
+      } else {
+        paginationInfo.textContent = 'Mostrando ' + (inicio + 1) + '–' + Math.min(fin, totalFiltrados) + ' de ' + totalFiltrados + ' usuarios · Hoja ' + paginaActual + ' de ' + totalHojas;
+      }
+    }
+
+    // Botones de paginación
+    if (paginationButtons) {
+      paginationButtons.innerHTML = '';
+      if (totalHojas > 1) {
+        const btnAnterior = document.createElement('button');
+        btnAnterior.type = 'button';
+        btnAnterior.textContent = 'Anterior';
+        btnAnterior.disabled = paginaActual === 1;
+        btnAnterior.className = 'rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition disabled:opacity-40 disabled:cursor-not-allowed';
+        btnAnterior.onclick = function () { irAHoja(paginaActual - 1); };
+        paginationButtons.appendChild(btnAnterior);
+
+        for (let i = 1; i <= totalHojas; i++) {
+          const btnHoja = document.createElement('button');
+          btnHoja.type = 'button';
+          btnHoja.textContent = i;
+          const esActual = i === paginaActual;
+          btnHoja.className = esActual
+            ? 'rounded-full bg-brandGreen px-3 py-1.5 text-xs font-semibold text-white transition'
+            : 'rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition';
+          btnHoja.onclick = function () { irAHoja(i); };
+          paginationButtons.appendChild(btnHoja);
+        }
+
+        const btnSiguiente = document.createElement('button');
+        btnSiguiente.type = 'button';
+        btnSiguiente.textContent = 'Siguiente';
+        btnSiguiente.disabled = paginaActual === totalHojas;
+        btnSiguiente.className = 'rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-900 transition disabled:opacity-40 disabled:cursor-not-allowed';
+        btnSiguiente.onclick = function () { irAHoja(paginaActual + 1); };
+        paginationButtons.appendChild(btnSiguiente);
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', renderizarTabla);
+</script>
+{% endblock %}

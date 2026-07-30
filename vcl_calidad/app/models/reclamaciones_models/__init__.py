@@ -4,7 +4,6 @@ from .r_models import (
     Ocurrencia, 
     TipoDeReclamacion, 
     EstatusReclamacion, 
-    Contenedor
     
 )
 from .reclamaciones import Reclamacion

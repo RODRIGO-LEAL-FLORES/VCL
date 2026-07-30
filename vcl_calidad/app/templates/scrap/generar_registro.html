@@ -208,10 +208,14 @@
                     </div>
                     <!-- Acciones rápidas desde el panel -->
                     <div class="flex gap-2 mt-5 border-t border-slate-800/60 pt-4">
+                        {% if current_user.rol.id in [1, 2] %}
+
                         <button type="button" id="btnEditarPanel"
                                 class="flex-1 rounded-full border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 text-xs font-bold uppercase py-2 transition">
                             Editar
                         </button>
+                        {% endif %}
+
                         <button type="button" id="btnEliminarPanel"
                                 class="flex-1 rounded-full border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-bold uppercase py-2 transition">
                             Eliminar
@@ -728,3 +732,4 @@ document.getElementById('editarForm').addEventListener('submit', function (e) {
 });
 </script>
 {% endblock %}
+

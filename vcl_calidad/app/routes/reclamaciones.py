@@ -5,7 +5,7 @@ from app import db
 
 from app.models.reclamaciones_models import (
     Categoria, Defecto, Ocurrencia, TipoDeReclamacion,
-    EstatusReclamacion, Contenedor
+    EstatusReclamacion,
 )
 from app.models.reclamaciones_models.reclamaciones import Reclamacion
 from app.routes.main import main_bp
@@ -94,7 +94,7 @@ def reclamaciones_section(section):
                     id_defecto             = request.form.get('id_defecto'),
                     id_categoria           = request.form.get('id_categoria'),
                     id_ocurrencia          = request.form.get('id_ocurrencia'),
-                    id_numero_contenedor   = request.form.get('id_numero_contenedor') or None,
+                    numero_contenedor      = request.form.get('numero_contenedor', '').strip() or None,
                     id_tipo_de_reclamacion = request.form.get('id_tipo_de_reclamacion'),
                     id_cliente             = request.form.get('id_cliente') or None,
                     id_estatus             = None,  # se calcula automáticamente abajo, ya no viene del form
@@ -138,7 +138,7 @@ def reclamaciones_section(section):
             tipos_reclamacion = TipoDeReclamacion.query.order_by(TipoDeReclamacion.tipo_reclamacion).all(),
             estatus_list      = EstatusReclamacion.query.order_by(EstatusReclamacion.orden).all(),
             clientes          = Cliente.query.order_by(Cliente.nombre).all(),
-            contenedores      = Contenedor.query.order_by(Contenedor.numero_contenedor).all(),
+
         )
 
     # --- LÓGICA PARA CATÁLOGOS ---
@@ -149,7 +149,7 @@ def reclamaciones_section(section):
         'tipos_reclamacion': (TipoDeReclamacion,  'reclamaciones/tipos_reclamacion.html', 'tipo_reclamacion'),
         'estatus':           (EstatusReclamacion, 'reclamaciones/estatus.html',           'descripcion_status'),
         'clientes':          (Cliente,            'reclamaciones/clientes.html',          'nombre'),
-        'contenedores':      (Contenedor,         'reclamaciones/contenedores.html',      'numero_contenedor'),
+
     }
 
     if section in mapping:
@@ -217,7 +217,7 @@ def reclamaciones_actions(section, action_type, item_id=None):
         'tipos_reclamacion': (TipoDeReclamacion,  'tipo_reclamacion',   'id_tipo_de_reclamacion'),
         'estatus':           (EstatusReclamacion, 'descripcion_status', 'id_estatus'),
         'clientes':          (Cliente,            'nombre',             'id_cliente'),
-        'contenedores':      (Contenedor,         'numero_contenedor',  'id_numero_contenedor'),
+
     }
 
     if section in model_mapping:
@@ -287,7 +287,7 @@ def reclamaciones_editar(item_id):
         registro.id_defecto             = request.form.get('id_defecto')
         registro.id_categoria           = request.form.get('id_categoria')
         registro.id_ocurrencia          = request.form.get('id_ocurrencia')
-        registro.id_numero_contenedor   = request.form.get('id_numero_contenedor') or None
+        registro.numero_contenedor      = request.form.get('numero_contenedor', '').strip() or None
         registro.id_tipo_de_reclamacion = request.form.get('id_tipo_de_reclamacion')
         registro.id_cliente             = request.form.get('id_cliente') or None
         registro.numero_parte           = request.form.get('numero_parte', '').strip() or None

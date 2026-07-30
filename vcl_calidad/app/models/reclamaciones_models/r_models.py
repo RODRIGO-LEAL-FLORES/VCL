@@ -51,10 +51,3 @@ class EstatusReclamacion(db.Model):
     
 
 
-class Contenedor(db.Model):
-    __tablename__ = 'contenedores'
-    id_numero_contenedor = db.Column(db.Integer, primary_key=True)
-    numero_contenedor = db.Column(db.String(50), nullable=False, unique=True)
-
-    def __repr__(self):
-        return f'<Contenedor {self.numero_contenedor}>'
