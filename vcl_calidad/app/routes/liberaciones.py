@@ -77,7 +77,33 @@ def liberaciones_section(section):
                 flash(f'Error al guardar la liberación: {e}')
             return redirect(url_for('main.liberaciones_section', section='nuevo'))
 
-        registros = Liberacion.query.order_by(Liberacion.id.desc()).limit(20).all()
+        # --- Búsqueda + paginación (10 registros por página) ---
+        page = request.args.get('page', 1, type=int)
+        search_query = request.args.get('search', '', type=str).strip()
+        per_page = 10
+
+        query = Liberacion.query \
+            .outerjoin(Cliente, Liberacion.id_cliente == Cliente.id_cliente) \
+            .outerjoin(Maquina, Liberacion.id_maquina == Maquina.id_maquina) \
+            .outerjoin(TipoLaminacion, Liberacion.id_tipo_laminacion == TipoLaminacion.id_tipo_laminacion) \
+            .outerjoin(EstatusLiberacion, Liberacion.id_status == EstatusLiberacion.id_estatus)
+
+        if search_query:
+            like = f'%{search_query}%'
+            query = query.filter(db.or_(
+                Cliente.nombre.ilike(like),
+                Maquina.nombre.ilike(like),
+                TipoLaminacion.especificacion.ilike(like),
+                EstatusLiberacion.descripcion_status.ilike(like),
+                Liberacion.motivo.ilike(like),
+            ))
+
+        pagination = query.order_by(Liberacion.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        registros = pagination.items
+        total = pagination.total
+        start = (page - 1) * per_page + 1 if total > 0 else 0
+        end = min(page * per_page, total)
+
         return render_template('liberaciones/generar_liberacion.html',
             registros=registros,
             edit_registro=edit_registro,
@@ -85,6 +111,13 @@ def liberaciones_section(section):
             maquinas=Maquina.query.order_by(Maquina.nombre).all(),
             tipos_laminacion=TipoLaminacion.query.order_by(TipoLaminacion.especificacion).all(),
             estatus_list=EstatusLiberacion.query.order_by(EstatusLiberacion.descripcion_status).all(),
+            page=page,
+            total_pages=pagination.pages,
+            page_numbers=build_page_numbers(page, pagination.pages) if pagination.pages else [],
+            search_query=search_query,
+            total_results=total,
+            start=start,
+            end=end,
         )
 
     if section == 'maquinas_status':

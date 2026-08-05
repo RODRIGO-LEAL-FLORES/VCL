@@ -32,6 +32,19 @@
                     {% endif %}
                 {% endwith %}
 
+                <form method="get" action="{{ url_for('main.liberaciones_section', section='nuevo') }}" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <label for="search_query" class="sr-only">Buscar liberaciones</label>
+                        <input id="search_query" name="search" type="search" value="{{ search_query or '' }}" placeholder="Buscar por cliente, máquina, tipo, estatus o motivo" class="w-full rounded-3xl border border-slate-700/80 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none sm:w-[28rem]" />
+                    </div>
+                    <div class="flex items-center gap-3">
+                        {% if search_query %}
+                        <a href="{{ url_for('main.liberaciones_section', section='nuevo') }}" class="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-3 text-xs font-semibold uppercase tracking-widest text-slate-300 hover:bg-slate-900 transition">Limpiar</a>
+                        {% endif %}
+                        <button type="submit" class="inline-flex items-center justify-center rounded-full bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-400">Buscar</button>
+                    </div>
+                </form>
+
                 <div class="grid gap-6 xl:grid-cols-[1fr_0fr]">
                     
                     <div class="rounded-[1rem] border border-slate-200/20 bg-[#02131c]/80 p-2 overflow-x-auto">
@@ -90,6 +103,38 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+
+                        {% if total_pages and total_pages > 1 %}
+                        <div class="flex flex-col gap-3 border-t border-slate-800/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-xs text-slate-500">Mostrando {{ start }}–{{ end }} de {{ total_results }} liberaciones</p>
+                            <nav class="flex items-center gap-2">
+                                {% set base_args = {'section': 'nuevo'} %}
+                                {% if search_query %}{% set _ = base_args.update({'search': search_query}) %}{% endif %}
+
+                                {% if page > 1 %}
+                                <a href="{{ url_for('main.liberaciones_section', page=page-1, **base_args) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-950/70 text-slate-200 hover:bg-slate-900 transition">‹</a>
+                                {% else %}
+                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-800 text-slate-600">‹</span>
+                                {% endif %}
+
+                                {% for n in page_numbers %}
+                                    {% if n == '...' %}
+                                    <span class="px-2 text-slate-600">…</span>
+                                    {% elif n == page %}
+                                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-sm font-semibold text-white">{{ n }}</span>
+                                    {% else %}
+                                    <a href="{{ url_for('main.liberaciones_section', page=n, **base_args) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-950/70 text-sm text-slate-200 hover:bg-slate-900 transition">{{ n }}</a>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page < total_pages %}
+                                <a href="{{ url_for('main.liberaciones_section', page=page+1, **base_args) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-950/70 text-slate-200 hover:bg-slate-900 transition">›</a>
+                                {% else %}
+                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-800 text-slate-600">›</span>
+                                {% endif %}
+                            </nav>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
