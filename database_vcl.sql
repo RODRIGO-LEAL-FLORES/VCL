@@ -25,6 +25,8 @@ CREATE TABLE Usuarios (
     puede_ver_tickets BOOLEAN DEFAULT TRUE,
     puede_ver_reportes BOOLEAN DEFAULT FALSE,
     puede_gestionar_usuarios BOOLEAN DEFAULT FALSE,
+    puede_ver_scrap BOOLEAN DEFAULT FALSE,
+    puede_gestionar_liberaciones BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (rol_id) REFERENCES Roles(id),
     FOREIGN KEY (id_area) REFERENCES Area(id_area)
 );
@@ -33,9 +35,45 @@ ALTER TABLE usuarios
 ADD COLUMN id_area INTEGER;
 
 ALTER TABLE usuarios
+add COLUMN puede_ver_scrap BOOLEAN DEFAULT FALSE;
+
+alter table usuarios
+add COLUMN puede_gestionar_liberaciones BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE usuarios
 ADD CONSTRAINT usuarios_id_area_fkey
 FOREIGN KEY (id_area)
 REFERENCES areas(id_area);
+
+
+#LIBERACIONES TABLES
+
+create table estatus_liberaciones (
+    id_estatus SERIAL PRIMARY KEY,
+    descripcion_status VARCHAR(100) NOT NULL UNIQUE
+);
+
+create table liberaciones (
+    id SERIAL PRIMARY KEY,
+    motivo VARCHAR(300) NOT NULL,
+    fecha_liberacion DATE NOT NULL,
+    hora_liberacion TIME NOT NULL,
+
+
+    id_status INT NOT NULL,
+    id_usuario INT NOT NULL,
+    id_cliente INT NOT NULL,
+    id_tipo_laminacion INT NOT NULL,
+    id_maquina INT NOT NULL,
+    FOREIGN KEY (id_status) REFERENCES estatus_liberaciones(id_estatus),
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),
+    FOREIGN KEY (id_tipo_laminacion) REFERENCES tipos_laminacion(id_tipo_laminacion),
+    FOREIGN KEY (id_maquina) REFERENCES maquinas(id_maquina)
+);
+
+
+
 
 
 -- RECLAMACIONES TABLES
@@ -159,20 +197,8 @@ ALTER TABL
 -- INSERT ROLES Y ÁREAS
 
 INSERT INTO Roles (nombre) VALUES 
-    ('ADMIN'),
-    ('ENCARGADO'),
-    ('CTL''s'),
-    ('Calidad'),
-    ('Estampado'),
-    ('Cadena de suministro'),
-    ('Mantenimiento'),
-    ('Ventas'),
-    ('Taller / Ingeniería'),
-    ('Nuevos desarrollos'),
-    ('Horno'),
-    ('TI'),
-    ('Planeación'),
-    ('SH');
+    ('AUDITOR')
+   ;
 
 
 INSERT INTO Area (area) VALUES 

@@ -220,7 +220,7 @@ def scrap_section(section):
        # GET: Renderizar formulario con datos para selectores
         page = request.args.get('page', 1, type=int)
         pagination = Scrap.query.order_by(Scrap.id.desc()).paginate(
-            page=page, per_page=20, error_out=False
+            page=page, per_page=10, error_out=False
         )
 
         return render_template('scrap/generar_registro.html',

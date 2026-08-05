@@ -65,6 +65,7 @@
                   <label class="flex items-center gap-2"><input type="checkbox" name="puede_ver_reportes" value="1" {% if edit_user.puede_ver_reportes %}checked{% endif %}/> Ver reportes</label>
                   <label class="flex items-center gap-2"><input type="checkbox" name="puede_gestionar_usuarios" value="1" {% if edit_user.puede_gestionar_usuarios %}checked{% endif %}/> Gestionar usuarios</label>
                   <label class="flex items-center gap-2"><input type="checkbox" name="puede_ver_scrap" value="1" {% if edit_user.puede_ver_scrap %}checked{% endif %}/> Ver scrap</label>
+                  <label class="flex items-center gap-2"><input type="checkbox" name="puede_gestionar_liberaciones" value="1" {% if edit_user.puede_gestionar_liberaciones %}checked{% endif %}/> Gestionar liberaciones</label>
                 </div>
               </div>
               <div class="flex flex-wrap gap-3 justify-start sm:justify-end sm:col-span-2 mt-4">
@@ -123,6 +124,8 @@
                       {% if u.puede_ver_reportes %}<span title="Reportes">Rep</span>{% endif %}
                       {% if u.puede_gestionar_usuarios %}<span title="Usuarios">U</span>{% endif %}
                       {% if u.puede_ver_scrap %}<span title="Scrap" class="text-emerald-400">S</span>{% endif %}
+                      {% if u.puede_gestionar_liberaciones %}<span title="Liberaciones" class="text-emerald-400">L</span>{% endif %}
+                      
                     </div>
                   </td>
                   <td class="px-6 py-4">
@@ -207,6 +210,7 @@
             <label class="flex items-center gap-2"><input type="checkbox" name="puede_ver_reportes" value="1"/> Ver reportes</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="puede_gestionar_usuarios" value="1"/> Gestionar usuarios</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="puede_ver_scrap" value="1"/> Ver scrap</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="puede_gestionar_liberaciones" value="1"/> Gestionar liberaciones</label>
           </div>
         </div>
       </div>

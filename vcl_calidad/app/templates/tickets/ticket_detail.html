@@ -119,15 +119,40 @@
 
                     {% if ticket.id_estatus_ticket == pendiente_validacion_id %}
                         <p class="text-slate-300 text-sm mb-4">
-                            El área responsable marcó este ticket como resuelto. Revisa la acción correctiva y la evidencia arriba; si estás conforme, ciérralo.
+                            El área responsable marcó este ticket como resuelto. Revisa la acción correctiva y la evidencia arriba; si estás conforme, ciérralo. Si no estás conforme, puedes rechazarlo para que lo corrijan.
                         </p>
-                        <form method="POST" action="{{ url_for('main.ticket_detail', item_id=ticket.id_folio_ticket) }}">
-                            <input type="hidden" name="cerrar_ticket" value="1">
-                            <button type="submit" onclick="return confirm('¿Confirmas que la solución es satisfactoria y deseas cerrar este ticket?')"
-                                class="rounded-full bg-brandGreen px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brandGreen/20 hover:bg-[#175b2f] transition">
-                                Cerrar Ticket
+
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <form method="POST" action="{{ url_for('main.ticket_detail', item_id=ticket.id_folio_ticket) }}">
+                                <input type="hidden" name="cerrar_ticket" value="1">
+                                <button type="submit" onclick="return confirm('¿Confirmas que la solución es satisfactoria y deseas cerrar este ticket?')"
+                                    class="rounded-full bg-brandGreen px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brandGreen/20 hover:bg-[#175b2f] transition">
+                                    Cerrar Ticket
+                                </button>
+                            </form>
+
+                            <button type="button" onclick="document.getElementById('rejectReasonBox').classList.toggle('hidden')"
+                                class="rounded-full border border-red-500/60 bg-red-950/20 px-6 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-950/40 transition">
+                                Rechazar
                             </button>
-                        </form>
+                        </div>
+
+                        <div id="rejectReasonBox" class="hidden mt-4 space-y-3 rounded-2xl border border-red-500/30 bg-red-950/10 p-4">
+                            <form method="POST" action="{{ url_for('main.ticket_detail', item_id=ticket.id_folio_ticket) }}" class="space-y-3">
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-slate-400">Motivo del rechazo (opcional)</label>
+                                    <textarea name="motivo_rechazo" rows="3" placeholder="Explica por qué no aceptas la resolución..."
+                                        class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"></textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" name="rechazar_ticket" value="1"
+                                        onclick="return confirm('¿Confirmas que deseas rechazar este ticket? El área responsable será notificada.')"
+                                        class="rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-700 transition">
+                                        Confirmar Rechazo
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     {% elif ticket.id_estatus_ticket == closed_id %}
                         <p class="text-slate-400 text-sm">Este ticket ya fue cerrado el {{ ticket.fecha_cierre }}.</p>
                     {% else %}

@@ -119,6 +119,52 @@ Por favor ingresa al sistema para atenderlo.
     mail.send(msg)
 
 
+def send_ticket_rejected_notification(ticket, motivo=None):
+    """
+    Notifica por correo a los usuarios del área responsable de un ticket
+    cuando el emisor RECHAZA el cierre (no queda conforme con la resolución).
+    El ticket regresa a estatus 'En proceso' para que el área responsable
+    pueda corregir la acción correctiva y/o subir nueva evidencia.
+    """
+    if not ticket.id_area_responsable:
+        return
+
+    usuarios = Usuario.query.filter(
+        Usuario.id_area == ticket.id_area_responsable,
+        Usuario.puede_ver_tickets.is_(True),
+        Usuario.activo.is_(True)
+    ).all()
+
+    destinatarios = [u.email for u in usuarios if u.email]
+    if not destinatarios:
+        return
+
+    area_nombre = ticket.area_responsable.area if ticket.area_responsable else 'N/A'
+
+    msg = Message(
+        subject=f"Ticket #{ticket.id_folio_ticket} rechazado por el emisor",
+        recipients=destinatarios
+    )
+    msg.body = f"""Hola,
+
+El ticket #{ticket.id_folio_ticket} fue RECHAZADO por el emisor y no se considera resuelto.
+El ticket ha vuelto a estatus 'En proceso' para que se corrija la acción correctiva y/o se suba nueva evidencia.
+
+Folio: {ticket.id_folio_ticket}
+Área responsable: {area_nombre}
+Emisor: {ticket.emisor}
+
+Motivo del rechazo:
+{motivo or 'El emisor no especificó un motivo.'}
+
+Acción correctiva registrada previamente:
+{ticket.accion_correctiva or 'Sin acciones correctivas registradas.'}
+
+Por favor ingresa al sistema para corregir y volver a enviar a validación.
+"""
+    mail.send(msg)
+
+
 def create_ticket_from_form():
     fecha_cierre_str = request.form.get('fecha_cierre')
     problematica_str = request.form.get('problematica', '').strip() or None
@@ -307,6 +353,24 @@ def ticket_detail(item_id):
                 ticket.dias_retrazo = calcular_dias_retrazo(ticket, {cerrado_id})
                 db.session.commit()
                 flash('Ticket cerrado correctamente.')
+                return redirect(url_for('main.ticket_detail', item_id=item_id))
+
+            if request.form.get('rechazar_ticket'):
+                motivo_rechazo_str = request.form.get('motivo_rechazo', '').strip() or None
+
+                # Regresa el ticket a "En proceso" para que el área responsable
+                # pueda corregir la acción correctiva y/o subir nueva evidencia.
+                if en_proceso_id:
+                    ticket.id_estatus_ticket = en_proceso_id
+                ticket.dias_retrazo = calcular_dias_retrazo(ticket, {cerrado_id})
+                db.session.commit()
+
+                try:
+                    send_ticket_rejected_notification(ticket, motivo_rechazo_str)
+                except Exception as e:
+                    current_app.logger.error(f"Error enviando correo de rechazo de ticket: {e}")
+
+                flash('Ticket rechazado. Se notificó al área responsable para que lo corrija.')
                 return redirect(url_for('main.ticket_detail', item_id=item_id))
 
         if current_user.id_area == ticket.id_area_responsable:
@@ -540,6 +604,7 @@ def tickets_editar(item_id):
         registro.id_estatus_ticket   = request.form.get('id_estatus_ticket')
         registro.fecha_emicion       = datetime.strptime(fecha_emicion_str, '%Y-%m-%d').date() if fecha_emicion_str else None
         registro.fecha_cierre        = datetime.strptime(fecha_cierre_str, '%Y-%m-%d').date() if fecha_cierre_str else None
+        registro.problematica        = problematica_str
 
         color_obj = Color_Ticket.query.get(int(registro.id_color_ticket)) if registro.id_color_ticket else None
         registro.fecha_compromiso = None
@@ -1036,5 +1101,8 @@ def reportes_pdf():
     return Response(
         pdf_buffer.getvalue(),
         mimetype='application/pdf',
-        headers={'Content-Disposition': f'attachment; filename={filename}'}
+        headers={
+            'Content-Disposition': f'inline; filename={filename}',
+            'Content-Type': 'application/pdf',
+        }
     )

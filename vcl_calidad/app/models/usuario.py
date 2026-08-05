@@ -26,6 +26,7 @@ class Usuario(db.Model, UserMixin):
     puede_ver_reportes = db.Column(db.Boolean, default=False)
     puede_ver_scrap = db.Column(db.Boolean, default=False)
     puede_gestionar_usuarios = db.Column(db.Boolean, default=False)
+    puede_gestionar_liberaciones = db.Column(db.Boolean, default=False)
 
     rol = db.relationship('Rol', backref=db.backref('usuarios', lazy=True))
     area = db.relationship('Area', backref=db.backref('usuarios', lazy=True), foreign_keys=[id_area])

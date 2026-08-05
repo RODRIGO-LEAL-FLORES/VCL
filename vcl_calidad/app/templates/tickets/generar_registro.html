@@ -79,7 +79,7 @@
                                     <td class="px-6 py-4 text-slate-200">{{ item.fecha_emicion }}</td>
                                     <td class="px-6 py-4 text-slate-200">{{ item.fecha_compromiso if item.fecha_compromiso else '—' }}</td>
                                     <td class="px-6 py-4">
-                                        <div class="flex flex-wrap gap-3">
+                                        <div class="flex flex-wrap items-center gap-2">
                                             <button type="button"
                                                 onclick="openTicketModal(this)"
                                                 data-folio="{{ item.id_folio_ticket }}"
@@ -95,16 +95,42 @@
                                                 data-problematica="{{ item.problematica or 'Sin descripción registrada.' }}"
                                                 data-accion-correctiva="{{ item.accion_correctiva or 'Sin acciones correctivas registradas.' }}"
                                                 data-evidencia="{{ item.evidencia_resolucion or 'Sin evidencia registrada.' }}"
-                                                class="inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-700 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-600 transition">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                title="Ver"
+                                                aria-label="Ver ticket"
+                                                class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-700 text-white hover:bg-slate-600 transition">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 </svg>
-                                                Ver
                                             </button>
-                                            <a href="{{ url_for('main.ticket_detail', item_id=item.id_folio_ticket) }}" class="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Editar</a>
+                                            <button type="button"
+                                                onclick="openEditModal(this)"
+                                                data-folio="{{ item.id_folio_ticket }}"
+                                                data-color-id="{{ item.id_color_ticket or '' }}"
+                                                data-area-id="{{ item.id_area_responsable or '' }}"
+                                                data-problematica="{{ item.problematica or '' }}"
+                                                data-emisor="{{ item.emisor or '' }}"
+                                                data-fecha-emicion="{{ item.fecha_emicion or '' }}"
+                                                data-fecha-cierre="{{ item.fecha_cierre or '' }}"
+                                                data-estatus-id="{{ item.id_estatus_ticket or '' }}"
+                                                title="Editar"
+                                                aria-label="Editar ticket"
+                                                class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12v5.25a2.25 2.25 0 01-2.25 2.25H6.75a2.25 2.25 0 01-2.25-2.25V8.25A2.25 2.25 0 016.75 6H12" />
+                                                </svg>
+                                            </button>
                                             <form method="POST" action="{{ url_for('main.tickets_eliminar', item_id=item.id_folio_ticket) }}" class="inline">
-                                                <button type="submit" onclick="return confirm('¿Eliminar este ticket?')" class="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 transition">Eliminar</button>
+                                                <button type="submit"
+                                                    onclick="return confirm('¿Eliminar este ticket?')"
+                                                    title="Eliminar"
+                                                    aria-label="Eliminar ticket"
+                                                    class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-red-600 text-white hover:bg-red-700 transition">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                    </svg>
+                                                </button>
                                             </form>
                                         </div>
                                     </td>
@@ -315,4 +341,76 @@
         </form>
     </div>
 </div>
+
+<!-- ============================================================= -->
+<!-- MODAL: EDITAR TICKET                                           -->
+<!-- ============================================================= -->
+<div id="editTicketModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4">
+    <div class="w-full max-w-3xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6 sticky top-0 bg-[#02131c]/95 pb-4">
+            <h2 class="text-xl font-bold text-white">Editar Ticket <span id="et-folio" class="text-emerald-400">#—</span></h2>
+            <button type="button" onclick="document.getElementById('editTicketModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        <form id="et-form" method="POST" action="#" class="space-y-6">
+            <!-- Campos que no se editan en este modal, pero deben conservar su valor -->
+            <input type="hidden" id="et-emisor" name="emisor">
+            <input type="hidden" id="et-fecha-emicion" name="fecha_emicion">
+            <input type="hidden" id="et-fecha-cierre" name="fecha_cierre">
+            <input type="hidden" id="et-estatus" name="id_estatus_ticket">
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Color de ticket <span class="text-red-400">*</span></label>
+                    <select id="et-color" name="id_color_ticket" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccione un color</option>
+                        {% for color in colores %}
+                        <option value="{{ color.id_color }}">{{ color.color_ticket }} — {{ color.dias_resolucion }} días</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Área responsable <span class="text-red-400">*</span></label>
+                    <select id="et-area" name="id_area_responsable" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccione un área</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id_area }}">{{ area.area }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Problemática -->
+            <div>
+                <label class="block mb-2 text-sm font-medium text-slate-400">Problemática <span class="text-red-400">*</span></label>
+                <textarea id="et-problematica" name="problematica" rows="4" required placeholder="Describe el problema..." class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20"></textarea>
+            </div>
+
+            <!-- Botones -->
+            <div class="mt-6 flex justify-end gap-3 border-t border-slate-800/60 pt-6">
+                <button type="button" onclick="document.getElementById('editTicketModal').classList.add('hidden')" class="rounded-full border border-slate-700 bg-slate-950/80 px-6 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition">Cancelar</button>
+                <button type="submit" class="rounded-full bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(btn) {
+        document.getElementById('et-folio').textContent       = '#' + btn.dataset.folio;
+        document.getElementById('et-color').value              = btn.dataset.colorId;
+        document.getElementById('et-area').value                = btn.dataset.areaId;
+        document.getElementById('et-problematica').value        = btn.dataset.problematica;
+
+        document.getElementById('et-emisor').value             = btn.dataset.emisor;
+        document.getElementById('et-fecha-emicion').value      = btn.dataset.fechaEmicion;
+        document.getElementById('et-fecha-cierre').value       = btn.dataset.fechaCierre;
+        document.getElementById('et-estatus').value            = btn.dataset.estatusId;
+
+        document.getElementById('et-form').action = "{{ url_for('main.tickets_editar', item_id=0) }}".replace('/0', '/' + btn.dataset.folio);
+
+        document.getElementById('editTicketModal').classList.remove('hidden');
+    }
+</script>
+
 {% endblock %}

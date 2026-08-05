@@ -55,6 +55,7 @@ def create_app():
         return render_template('429.html', error=e), 429
     
     from app.routes.main import main_bp
+    from app import routes as _routes
     app.register_blueprint(main_bp)
     
     with app.app_context():

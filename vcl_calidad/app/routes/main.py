@@ -115,6 +115,7 @@ def crear_usuario():
     puede_gestionar_usuarios = bool(request.form.get('puede_gestionar_usuarios'))
     # NUEVO MÓDULO: Control de Scrap
     puede_ver_scrap = bool(request.form.get('puede_ver_scrap'))
+    puede_gestionar_liberaciones = bool(request.form.get('puede_gestionar_liberaciones'))  # Nuevo permiso
 
     if not nombre or not email or not password or not rol_id:
         flash('Nombre, email, contraseña y rol son obligatorios.')
@@ -139,6 +140,7 @@ def crear_usuario():
         puede_ver_reportes=puede_ver_reportes,
         puede_gestionar_usuarios=puede_gestionar_usuarios,
         puede_ver_scrap=puede_ver_scrap,  # Guardar en DB
+        puede_gestionar_liberaciones=puede_gestionar_liberaciones,  # Nuevo permiso
         id_area=int(id_area) if id_area else None  # Guardar el ID del área
     )
     db.session.add(usuario)
@@ -165,6 +167,7 @@ def editar_usuario(id_usuario):
         puede_ver_tickets = bool(request.form.get('puede_ver_tickets'))
         puede_ver_reportes = bool(request.form.get('puede_ver_reportes'))
         puede_gestionar_usuarios = bool(request.form.get('puede_gestionar_usuarios'))
+        puede_gestionar_liberaciones = bool(request.form.get('puede_gestionar_liberaciones'))  # Nuevo permiso
         id_area = request.form.get('id_area')
         # NUEVO MÓDULO: Control de Scrap
         puede_ver_scrap = bool(request.form.get('puede_ver_scrap'))
@@ -184,6 +187,7 @@ def editar_usuario(id_usuario):
         usuario.puede_ver_reportes = puede_ver_reportes
         usuario.puede_gestionar_usuarios = puede_gestionar_usuarios
         usuario.puede_ver_scrap = puede_ver_scrap  # Actualizar en DB
+        usuario.puede_gestionar_liberaciones = puede_gestionar_liberaciones  # Actualizar el permiso
         usuario.id_area = int(id_area) if id_area else None  # Actualizar el ID del área
 
         db.session.commit()

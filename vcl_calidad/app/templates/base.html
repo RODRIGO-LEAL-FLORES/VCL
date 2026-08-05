@@ -13,6 +13,16 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
     <style>
+        :root {
+            --page-bg: #03151e;
+            --surface: #020e14;
+            --surface-strong: #020e14;
+            --surface-soft: #01080c;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border: rgba(148, 163, 184, 0.24);
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
         .flatpickr-calendar { background: #02131c !important; border: 1px solid #334155 !important; color: #cbd5e1 !important; }
         .flatpickr-time input { color: #ffffff !important; }
         .flatpickr-time .flatpickr-am-pm { color: #cbd5e1 !important; }
@@ -25,6 +35,7 @@
     {% block styles %}{% endblock %}
 
 </head>
+
 <body class="flex flex-col min-h-screen text-slate-200 antialiased font-sans bg-brandDark relative overflow-x-hidden">
 
     <div class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40 mix-blend-luminosity pointer-events-none" style="background-image: url('/static/VCLAMINATIONS.jpg');"></div>
@@ -39,13 +50,15 @@
                     <span class="text-[9px] font-bold tracking-widest text-slate-500">LAPHAM-HICKEY STEEL</span>
                 </div>
             </a>
-            <button id="menu-btn" class="flex items-center gap-3 text-white hover:text-slate-300 transition-colors group focus:outline-none relative z-50">
-                <span class="text-xs font-bold tracking-widest uppercase hidden sm:inline">Menú</span>
-                <div class="flex flex-col gap-1 w-6">
-                    <span id="line1" class="h-0.5 w-full bg-white transition-all duration-300"></span>
-                    <span id="line2" class="h-0.5 w-full bg-white transition-all duration-300"></span>
-                </div>
-            </button>
+            <div class="flex items-center gap-3">
+                <button id="menu-btn" class="flex items-center gap-3 text-white hover:text-slate-300 transition-colors group focus:outline-none relative z-50">
+                    <span class="text-xs font-bold tracking-widest uppercase hidden sm:inline">Menú</span>
+                    <div class="flex flex-col gap-1 w-6">
+                        <span id="line1" class="h-0.5 w-full bg-white transition-all duration-300"></span>
+                        <span id="line2" class="h-0.5 w-full bg-white transition-all duration-300"></span>
+                    </div>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -103,6 +116,15 @@
         </a>
         {% endif %}
 
+        {% if current_user.puede_gestionar_liberaciones %}
+        <a href="{{ url_for('main.liberaciones') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75a1.5 1.5 0 011.5-1.5h12a1.5 1.5 0 011.5 1.5v5.25a1.5 1.5 0 01-1.5 1.5h-12a1.5 1.5 0 01-1.5-1.5v-5.25zM7.5 6.75h9M7.5 3.75h9" />
+            </svg>
+            <span>Liberaciones</span>
+        </a>
+        {% endif %}
+
         {% if current_user.puede_ver_reportes %}
         <a href="{{ url_for('main.scrap_reportes') }}" class="text-base font-bold tracking-wide text-white hover:text-emerald-400 transition-colors flex items-center gap-3 group py-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -136,10 +158,17 @@
     <div id="menu-backdrop" class="fixed inset-0 bg-black/40 z-30 hidden backdrop-blur-sm transition-opacity duration-300 opacity-0"></div>
 
     <main class="flex-grow flex flex-col relative z-10">
-        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center flex-grow">
+
+        <div class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center flex-grow">
             {% block content %}{% endblock %}
         </div>
+
+        
+
+       
     </main>
+
+
 
     <footer class="w-full border-t border-slate-900/60 bg-brandDark/90 backdrop-blur-sm py-6 text-center text-xs tracking-wide text-slate-500 relative z-10">
         <div class="max-w-7xl mx-auto px-4">
@@ -241,8 +270,8 @@
 
         resetTimers();
     </script>
-    {% endif %}
     {% block scripts %}{% endblock %}
+    {% endif %}
     {% block modals %}{% endblock %}
 </body>
 </html>

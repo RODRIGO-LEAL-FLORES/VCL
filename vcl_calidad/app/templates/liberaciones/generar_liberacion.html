@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva liberación - VC Laminations{% endblock %}
+
+{% block content %}
+<section class="antialiased">
+    <div class="mx-auto max-w-screen-2xl px-4 lg:px-12 py-10">
+        <div class="bg-[#020f14]/90 border border-slate-800/80 shadow-2xl shadow-slate-950/40 rounded-[2rem] overflow-hidden">
+            <div class="px-6 py-6 border-b border-slate-800/80 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div>
+                    <p class="text-slate-400 uppercase tracking-[0.24em] text-xs font-bold mb-2">Liberaciones</p>
+                    <h1 class="text-3xl font-black text-white">Registrar liberación</h1>
+                    <p class="text-slate-500 text-sm mt-1">Usa clientes, máquinas y tipos de laminación ya existentes.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-end">
+                    <a href="{{ url_for('main.liberaciones') }}" class="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-200 hover:bg-slate-900 transition">Volver al módulo</a>
+                    <button type="button" onclick="document.getElementById('createModal').classList.remove('hidden')" class="mt-6 inline-flex items-center justify-center rounded-full bg-brandGreen px-6 py-3 text-sm font-semibold text-white hover:bg-[#175b2f] transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Nueva liberación
+                        </button>
+                </div>
+            </div>
+
+            <div class="px-6 py-6 space-y-6">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="rounded-2xl border border-slate-700 bg-slate-900/70 px-5 py-3 text-sm text-slate-300">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="grid gap-6 xl:grid-cols-[1fr_0fr]">
+                    
+                    <div class="rounded-[1rem] border border-slate-200/20 bg-[#02131c]/80 p-2 overflow-x-auto">
+                        <h2 class="text-xl font-bold text-white mb-6">Últimas liberaciones</h2>
+                        <table class="min-w-full text-left text-sm text-slate-300">
+                            <thead class="bg-[#03121b]/90 text-xs uppercase tracking-[0.2em] text-slate-500">
+                                <tr>
+                                    <th class="px-4 py-3">ID</th>
+                                    <th class="px-4 py-3">Cliente</th>
+                                    <th class="px-4 py-3">Máquina</th>
+                                    <th class="px-4 py-3">Tipo</th>
+                                    <th class="px-4 py-3">Estatus</th>
+                                    <th class="px-4 py-3">Fecha / Hora</th>
+                                    <th class="px-4 py-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/90" id="tabla-liberaciones">
+                                {% for registro in registros %}
+                                <tr class="fila-registro bg-[#020f14]/80 hover:bg-[#051721]/80 transition-colors">
+                                    <td class="px-4 py-3 font-semibold text-white">{{ registro.id }}</td>
+                                    <td class="px-4 py-3 text-slate-200">{{ registro.cliente.nombre if registro.cliente else 'N/A' }}</td>
+                                    <td class="px-4 py-3 text-slate-200">{{ registro.maquina.nombre if registro.maquina else 'N/A' }}</td>
+                                    <td class="px-4 py-3 text-slate-200">{{ registro.tipo_laminacion.especificacion if registro.tipo_laminacion else 'N/A' }}</td>
+                                    <td class="px-4 py-3 text-slate-200">{{ registro.estatus.descripcion_status if registro.estatus else 'N/A' }}</td>
+                                    <td class="px-4 py-3 text-slate-200">{{ registro.fecha_liberacion }} {{ registro.hora_liberacion }}</td>
+                                    <td class="px-4 py-3 flex flex-wrap gap-2">
+                                        <button type="button"
+                                            onclick="abrirEditar(this)"
+                                            data-id="{{ registro.id }}"
+                                            data-cliente="{{ registro.cliente.id_cliente if registro.cliente else '' }}"
+                                            data-maquina="{{ registro.maquina.id_maquina if registro.maquina else '' }}"
+                                            data-tipo="{{ registro.tipo_laminacion.id_tipo_laminacion if registro.tipo_laminacion else '' }}"
+                                            data-estatus="{{ registro.estatus.id_estatus if registro.estatus else '' }}"
+                                            data-fecha="{{ registro.fecha_liberacion.strftime('%Y-%m-%d') if registro.fecha_liberacion else '' }}"
+                                            data-hora="{{ registro.hora_liberacion.strftime('%H:%M') if registro.hora_liberacion else '' }}"
+                                            data-motivo="{{ registro.motivo or '' }}"
+                                            class="inline-flex items-center justify-center rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition" title="Editar">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 11.25l6.75-6.75 3.535 3.535L12.536 14.785H9v-3.535z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h6.75L21 9.75l-6.75-6.75L3 14.25V21z" />
+                                            </svg>
+                                        </button>
+                                        <form method="POST" action="{{ url_for('main.liberaciones_actions', section='nuevo', action_type='eliminar', item_id=registro.id) }}" class="inline">
+                                            <button type="submit" onclick="return confirm('¿Eliminar esta liberación?')" class="inline-flex items-center justify-center rounded-full bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 transition" title="Eliminar">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5.25A1.25 1.25 0 0110.25 4h3.5A1.25 1.25 0 0115 5.25V7m-1 0v10.5a1.5 1.5 0 01-1.5 1.5h-1.5a1.5 1.5 0 01-1.5-1.5V7h4.5z" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr class="bg-[#020f14]/80">
+                                    <td colspan="7" class="px-4 py-12 text-center text-slate-500">No hay liberaciones registradas aún.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block modals %}
+<div id="createModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4 py-8 overflow-y-auto">
+    <div class="w-full max-w-4xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-white">Nueva liberación</h2>
+                <p class="text-slate-400 text-sm mt-1">Llena el formulario y guarda la liberación directamente.</p>
+            </div>
+            <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('main.liberaciones_section', section='nuevo') }}">
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cliente</label>
+                    <select name="id_cliente" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccionar cliente</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id_cliente }}">{{ cliente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Máquina</label>
+                    <select name="id_maquina" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccionar máquina</option>
+                        {% for maquina in maquinas %}
+                        <option value="{{ maquina.id_maquina }}">{{ maquina.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="relative">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Tipo de laminación</label>
+                    <input id="tipoLaminacionSearch" type="text" autocomplete="off" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" placeholder="Buscar tipo de laminación" required onfocus="openTipoLaminacionList('tipoLaminacionListCreate')" oninput="filterTipoLaminacionOptions('tipoLaminacionSearch','idTipoLaminacion','tipoLaminacionListCreate')" />
+                    <input id="idTipoLaminacion" name="id_tipo_laminacion" type="hidden" required />
+                    <div id="tipoLaminacionListCreate" class="tipo-laminacion-list absolute inset-x-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-700 bg-[#020f14] text-left shadow-2xl shadow-black/40 hidden">
+                        {% for tipo in tipos_laminacion %}
+                        <button type="button" class="w-full px-4 py-3 text-left text-slate-200 hover:bg-slate-800" data-id="{{ tipo.id_tipo_laminacion }}" data-value="{{ tipo.especificacion }}" onclick="selectTipoLaminacionOption(this,'tipoLaminacionSearch','idTipoLaminacion','tipoLaminacionListCreate')">{{ tipo.especificacion }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Estatus</label>
+                    <select name="id_status" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccionar estatus</option>
+                        {% for status in estatus_list %}
+                        <option value="{{ status.id_estatus }}">{{ status.descripcion_status }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Fecha de liberación</label>
+                    <input type="date" name="fecha_liberacion" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Hora de liberación</label>
+                    <input type="time" name="hora_liberacion" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Motivo</label>
+                    <textarea name="motivo" rows="4" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="submit" class="rounded-full bg-brandGreen px-6 py-3 text-sm font-semibold text-white hover:bg-[#175b2f] transition">Guardar liberación</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4 py-8 overflow-y-auto">
+    <div class="w-full max-w-4xl rounded-[2rem] bg-[#02131c]/95 border border-slate-800/90 p-6 shadow-2xl shadow-black/60">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-white">Editar liberación</h2>
+                <p class="text-slate-400 text-sm mt-1">Actualiza cualquier campo y guarda los cambios.</p>
+            </div>
+            <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        <form id="editForm" method="POST">
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Cliente</label>
+                    <select id="editCliente" name="id_cliente" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccionar cliente</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id_cliente }}">{{ cliente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Máquina</label>
+                    <select id="editMaquina" name="id_maquina" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccionar máquina</option>
+                        {% for maquina in maquinas %}
+                        <option value="{{ maquina.id_maquina }}">{{ maquina.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="relative">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Tipo de laminación</label>
+                    <input id="editTipoSearch" type="text" autocomplete="off" class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" placeholder="Buscar tipo de laminación" required onfocus="openTipoLaminacionList('tipoLaminacionListEdit')" oninput="filterTipoLaminacionOptions('editTipoSearch','editIdTipo','tipoLaminacionListEdit')" />
+                    <input id="editIdTipo" name="id_tipo_laminacion" type="hidden" required />
+                    <div id="tipoLaminacionListEdit" class="tipo-laminacion-list absolute inset-x-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-700 bg-[#020f14] text-left shadow-2xl shadow-black/40 hidden">
+                        {% for tipo in tipos_laminacion %}
+                        <button type="button" class="w-full px-4 py-3 text-left text-slate-200 hover:bg-slate-800" data-id="{{ tipo.id_tipo_laminacion }}" data-value="{{ tipo.especificacion }}" onclick="selectTipoLaminacionOption(this,'editTipoSearch','editIdTipo','tipoLaminacionListEdit')">{{ tipo.especificacion }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Estatus</label>
+                    <select id="editEstatus" name="id_status" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20">
+                        <option value="">Seleccionar estatus</option>
+                        {% for status in estatus_list %}
+                        <option value="{{ status.id_estatus }}">{{ status.descripcion_status }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Fecha de liberación</label>
+                    <input id="editFecha" type="date" name="fecha_liberacion" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Hora de liberación</label>
+                    <input id="editHora" type="time" name="hora_liberacion" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20" />
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-sm font-medium text-slate-400">Motivo</label>
+                    <textarea id="editMotivo" name="motivo" rows="4" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white placeholder:text-slate-500 focus:border-brandGreen focus:outline-none focus:ring-2 focus:ring-brandGreen/20"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="submit" class="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTipoLaminacionOptions(searchInputId, hiddenInputId, listId) {
+    const searchInput = document.getElementById(searchInputId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const list = document.getElementById(listId);
+    if (!searchInput || !hiddenInput || !list) return;
+
+    const value = (searchInput.value || '').trim().toLowerCase();
+    let anyVisible = false;
+
+    list.querySelectorAll('[data-value]').forEach(option => {
+        const label = (option.dataset.value || '').toLowerCase();
+        const visible = label.includes(value);
+        option.style.display = visible ? 'block' : 'none';
+        if (visible) anyVisible = true;
+        if (label === value) {
+            hiddenInput.value = option.dataset.id || '';
+        }
+    });
+
+    if (!anyVisible) {
+        hiddenInput.value = '';
+    }
+
+    list.classList.toggle('hidden', !anyVisible);
+}
+
+function openTipoLaminacionList(listId) {
+    closeAllTipoLaminacionLists(listId);
+    const list = document.getElementById(listId);
+    if (!list) return;
+    list.classList.remove('hidden');
+}
+
+function closeAllTipoLaminacionLists(exceptId) {
+    document.querySelectorAll('.tipo-laminacion-list').forEach(list => {
+        if (list.id !== exceptId) {
+            list.classList.add('hidden');
+        }
+    });
+}
+
+function selectTipoLaminacionOption(option, inputId, hiddenInputId, listId) {
+    const input = document.getElementById(inputId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const list = document.getElementById(listId);
+    if (!input || !hiddenInput || !list) return;
+
+    input.value = option.dataset.value || '';
+    hiddenInput.value = option.dataset.id || '';
+    list.classList.add('hidden');
+}
+
+function setTipoLaminacionValue(searchInputId, hiddenInputId, tipoId) {
+    const input = document.getElementById(searchInputId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    if (!input || !hiddenInput) return;
+    const option = document.querySelector(`#${searchInputId === 'editTipoSearch' ? 'tipoLaminacionListEdit' : 'tipoLaminacionListCreate'} [data-id='${tipoId}']`);
+    if (option) {
+        input.value = option.dataset.value || '';
+        hiddenInput.value = option.dataset.id || '';
+    } else {
+        input.value = '';
+        hiddenInput.value = '';
+    }
+}
+
+document.addEventListener('click', function(event) {
+    const target = event.target;
+    if (!target.closest('.tipo-laminacion-list') && !target.closest('#tipoLaminacionSearch') && !target.closest('#editTipoSearch')) {
+        closeAllTipoLaminacionLists();
+    }
+});
+
+// Punto único de armado de datos para el modal de edición.
+function abrirEditarData(data) {
+    const modal = document.getElementById('editModal');
+    const form = document.getElementById('editForm');
+    if (!modal || !form) return;
+
+    const id = data.id;
+    form.action = `{{ url_for('main.liberaciones_actions', section='nuevo', action_type='editar', item_id=0) }}`.replace('/0', `/${id}`);
+    document.getElementById('editCliente').value = data.cliente || '';
+    document.getElementById('editMaquina').value = data.maquina || '';
+    setTipoLaminacionValue('editTipoSearch', 'editIdTipo', data.tipo);
+    document.getElementById('editEstatus').value = data.estatus || '';
+    document.getElementById('editFecha').value = data.fecha || '';
+    document.getElementById('editHora').value = data.hora || '';
+    document.getElementById('editMotivo').value = data.motivo || '';
+    modal.classList.remove('hidden');
+}
+
+// Llamado desde el botón de la tabla: lee los data-* del propio botón.
+function abrirEditar(button) {
+    abrirEditarData({
+        id: button.dataset.id,
+        cliente: button.dataset.cliente,
+        maquina: button.dataset.maquina,
+        tipo: button.dataset.tipo,
+        estatus: button.dataset.estatus,
+        fecha: button.dataset.fecha,
+        hora: button.dataset.hora,
+        motivo: button.dataset.motivo
+    });
+}
+</script>
+{% if edit_registro %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    abrirEditarData({
+        id: {{ edit_registro.id }},
+        cliente: {{ edit_registro.cliente.id_cliente if edit_registro.cliente else 'null' }},
+        maquina: {{ edit_registro.maquina.id_maquina if edit_registro.maquina else 'null' }},
+        tipo: {{ edit_registro.tipo_laminacion.id_tipo_laminacion if edit_registro.tipo_laminacion else 'null' }},
+        estatus: {{ edit_registro.estatus.id_estatus if edit_registro.estatus else 'null' }},
+        fecha: {{ edit_registro.fecha_liberacion.strftime('%Y-%m-%d')|tojson }},
+        hora: {{ edit_registro.hora_liberacion.strftime('%H:%M')|tojson }},
+        motivo: {{ edit_registro.motivo|tojson }}
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -95,6 +95,21 @@
             </div>
             {% endif %}
 
+            {% if current_user.puede_gestionar_liberaciones %}
+            <div class="bg-[#020f14]/80 backdrop-blur-xl border border-slate-800/80 p-6 sm:p-8 shadow-xl rounded-2xl transform transition-all duration-300 hover:scale-[1.02] hover:border-slate-700/60 group flex flex-col justify-between min-h-[220px]">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-white tracking-wide group-hover:text-emerald-400 transition-colors">LIBERACIONES</h3>
+                        <span class="text-xs font-bold text-emerald-500 bg-emerald-950/30 border border-emerald-900/50 px-2 py-0.5 rounded uppercase tracking-widest">Activo</span>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed">Registro, control y análisis de desperdicios de material e insumos en el proceso de producción.</p>
+                </div>
+                <div class="mt-6">
+                    <a href="{{ url_for('main.liberaciones') }}" class="inline-block w-full text-center bg-brandGreen hover:bg-[#154d2c] text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all duration-200 shadow-md shadow-emerald-950/20">Ingresar Módulo</a>
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 
